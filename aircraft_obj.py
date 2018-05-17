@@ -33,7 +33,7 @@ class CAV:
         # 对当前状态求导，得到状态导数
         # 输入当前状态、攻角(度)、倾侧角(度)、推力（沿机体坐标系x），输出状态导数
         # 状态提取[半径m，维度，经度，速度m/s，弹道倾角(弧度)，弹道偏角(弧度)]
-        r, gamma, phi, v, theta, chi = x
+        r, gamma, phi, v, theta, chi, range = x
 
         # 环境模型
         h = r - self.R0 * 1000  # 高度
@@ -57,11 +57,11 @@ class CAV:
                              (g - v ** 2 / r) * math.cos(theta))
         chi_dot = 1 / v * ((l + p * math.sin(alpha / 57.3)) * math.sin(tht / 57.3) / math.cos(theta) / self.m0 +
                            (v ** 2 / r) * math.cos(theta) * math.sin(chi) * math.tan(phi))
-        # range_dot = v * math.cos(theta) / r
+        range_dot = v * math.cos(theta) / r  # 速度向平面投影积分射程
         Q_dot = self.C1 / math.sqrt(self.Rd) * (rho / self.rho0) ** 0.5 * (v / self.Vc) ** 3.15
         info = {"Q_dot": Q_dot, "ny": ny, "q": q / 1000, "tht": tht, "alpha": alpha}
 
-        x_dot = np.array([r_dot, gama_dot, phi_dot, v_dot, theta_dot, chi_dot])
+        x_dot = np.array([r_dot, gama_dot, phi_dot, v_dot, theta_dot, chi_dot, range_dot])
         return x_dot, info
 
     def v2alpha(self, v):
@@ -125,7 +125,15 @@ class CAV:
                  + p13 * alpha * ma ** 3 + p04 * ma ** 4
         else:
             # 高升阻比
-            c1, c2 = 0, 0
+            # 最大升阻比3.5
+            cl = -0.0196 - 0.02065 * ma + 0.002347 * ma ** 2 - (8.486e-05) * ma ** 3 + (9.987e-07) * ma ** 4 + \
+                 0.05097 * alpha - 0.0009715 * alpha * ma - (3.141e-06) * alpha * ma ** 2 + \
+                 (4.148e-07) * alpha * ma ** 3 + 0.0004383 * alpha ** 2 - (9.948e-06) * alpha ** 2 * ma + \
+                 (2.897e-07) * alpha ** 2 * ma ** 2
+            cd = 0.4796 - 0.07427 * ma + 0.003595 * ma ** 2 - (7.542e-05) * ma ** 3 + (1.029e-06) * ma ** 4 + \
+                 (-0.04037) * alpha + 0.005605 * alpha * ma - 0.0001142 * alpha * ma ** 2 + \
+                 (-2.286e-06) * alpha * ma ** 3 + 0.002492 * alpha ** 2 - (0.0002678) * alpha ** 2 * ma + \
+                 (8.114e-06) * alpha ** 2 * ma ** 2
         return cl, cd
 
 
@@ -142,7 +150,7 @@ class AircraftEnv(CAV):
         self.x = None  # 内部循环状态变量
         self.state = None  # 深度强化学习中或者与外界交互变量，长度小于x
         self.t = 0
-        self.delta_t = 0.01  # 积分步长
+        self.delta_t = 0.1  # 积分步长
         self.random = random
 
         # 飞行器初始位置信息
@@ -156,7 +164,7 @@ class AircraftEnv(CAV):
         self.range0 = 0  # Km   射程
         self.Q0 = 0
         self.Osci0 = 0
-        self.x0 = np.hstack((self.r0 * 1000, self.gama0, self.phi0, self.v0, self.theta0, self.chi0))
+        self.x0 = np.hstack((self.r0 * 1000, self.gama0, self.phi0, self.v0, self.theta0, self.chi0, self.range0))
 
         # 进行初始化
         self.reset()
@@ -198,17 +206,15 @@ class AircraftEnv(CAV):
 
         info = info.copy()
         return self.state, reward, done, info
-        # TODO range的设置
-        # TODO 高升阻比的设置
 
 
 if __name__ == '__main__':
     cav = AircraftEnv()
     state_now = cav.reset()
     state_record = state_now.copy()
-    for i in range(10000):
-        action = np.random.rand(1) * 180
+    for i in range(1000):
+        action = np.random.rand(1) * 180 - 90
         state_now, reward, done, info = cav.step(action)
         state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
-plt.plot(state_record[:, 3])
-plt.show()
+    plt.plot(state_record[:, 3])
+    plt.show()
