@@ -198,6 +198,8 @@ class AircraftEnv(CAV):
 
         info = info.copy()
         return self.state, reward, done, info
+        # TODO range的设置
+        # TODO 高升阻比的设置
 
 
 if __name__ == '__main__':
