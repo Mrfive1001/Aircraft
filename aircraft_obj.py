@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 
 class CAV:
@@ -177,7 +178,8 @@ class AircraftEnv(CAV):
             pass
         else:
             self.x = self.x0.copy()
-        return self._x2state(self.x)
+        self.state = self._x2state(self.x)
+        return self.state.copy()
 
     def step(self, action):
         # 假设倾侧角是action度
@@ -199,17 +201,12 @@ class AircraftEnv(CAV):
 
 
 if __name__ == '__main__':
-    # cav = CAV()
-    # mas = np.array([3.5, 5, 8, 15, 20, 23])
-    # alphas = np.array([10, 15, 20])
-    # cls = []
-    # cds = []
-    # for alpha in alphas:
-    #     temp_cls, temp_cds = [], []
-    #     for ma in mas:
-    #         temp_cl, temp_cd = cav.alphama2clcd(alpha, ma)
-    #         temp_cls.append(temp_cl)
-    #         temp_cds.append(temp_cd)
-    #     cls.append(temp_cls.copy())
-    #     cds.append(temp_cds.copy())
     cav = AircraftEnv()
+    state_now = cav.reset()
+    state_record = state_now.copy()
+    for i in range(10000):
+        action = np.random.rand(1) * 180
+        state_now, reward, done, info = cav.step(action)
+        state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
+plt.plot(state_record[:, 3])
+plt.show()
