@@ -48,7 +48,6 @@ class CAV:
         self.n_max_allow = 4  # g0
         self.q_max_allow = 200  # Kpa
 
-
     def get_state_dot(self, x, alpha, tht, p=0):
         # 对当前状态求导，得到状态导数
         # 输入当前状态、攻角(度)、倾侧角(度)、推力（沿机体坐标系x），输出状态导数
@@ -58,11 +57,11 @@ class CAV:
         # 环境模型
         h = r - self.R0 * 1000  # 高度
         g = self.h2g(h)
-        rho = self.h2rho(h)
+        rho = self.h2rho(h)  # 密度
 
         # 气动力参数
         cl, cd = self.alphama2clcd(alpha, v / 340)  # 升力阻力系数
-        q = 0.5 * rho * v ** 2
+        q = 0.5 * rho * v ** 2  # 动压
         d = q * cl * self.S  # 阻力
         l = q * cd * self.S  # 升力
         ny = math.sqrt((p * math.sin(alpha / 57.3) + l) ** 2 +
@@ -85,7 +84,7 @@ class CAV:
         return state_dot, info
 
     def v2alpha(self, v):
-        # 输入速度m/s,输出攻角(度),这是CAV本身的设计决定的,不需要高边
+        # 输入速度m/s,输出攻角(度),这是CAV本身的设计决定的,不需要改变
         v1 = 3100
         v2 = 4700
         alpha_max = 20
