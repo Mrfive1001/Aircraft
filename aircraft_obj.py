@@ -28,7 +28,7 @@ class CAV:
         self.n_max_allow = 4  # g0
         self.q_max_allow = 200  # Kpa
 
-    def get_state_dot(self, x, alpha, tht, p=0):
+    def get_x_dot(self, x, alpha, tht, p=0):
         # 对当前状态求导，得到状态导数
         # 输入当前状态、攻角(度)、倾侧角(度)、推力（沿机体坐标系x），输出状态导数
         # 状态提取[半径m，维度，经度，速度m/s，弹道倾角(弧度)，弹道偏角(弧度)]
@@ -141,6 +141,7 @@ class AircraftEnv(CAV):
         self.x = None  # 内部循环状态变量
         self.state = None  # 深度强化学习中或者与外界交互变量，长度小于x
         self.t = 0
+        self.delta_t = 0.01  # 积分步长
         self.random = random
 
         # 飞行器初始位置信息
@@ -178,8 +179,23 @@ class AircraftEnv(CAV):
             self.x = self.x0.copy()
         return self._x2state(self.x)
 
-    def step(self):
-        pass
+    def step(self, action):
+        # 假设倾侧角是action度
+        # 使用固定序列的攻角
+        v = self.x[3]
+        alpha = self.v2alpha(v)
+        # 简单积分
+        x_dot, info = self.get_x_dot(self.x, alpha, action)
+        self.x += x_dot * self.delta_t
+
+        done = None
+
+        self.state = self._x2state(self.x)
+
+        reward = None
+
+        info = info.copy()
+        return self.state, reward, done, info
 
 
 if __name__ == '__main__':
