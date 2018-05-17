@@ -2,33 +2,12 @@ import numpy as np
 import math
 
 
-class AircraftEnv:
-    """
-    编写飞行器Markov模型
-    分为几个部分
-    x 表示内部飞行器所有信息
-    state 外部所需要的信息
-    """
-
-    def __init__(self):
-        pass
-
-    def render(self):
-        pass
-
-    def reset(self):
-        pass
-
-    def step(self):
-        pass
-
-
 class CAV:
     """
     CAV的飞行参数与气动模型
     """
 
-    def __init__(self):
+    def __init__(self, low=True):
         # 飞行器总体参数,一般来说不用变
         self.m0 = 907  # kg
         self.S = 0.35  # m2
@@ -40,6 +19,7 @@ class CAV:
         self.Tc = (self.R0 * 1000 / self.g0) ** 0.5
         self.beta = 7200
         self.rho0 = 1.225
+        self.low = low
 
         # 约束条件
         self.hf = 20
@@ -80,8 +60,8 @@ class CAV:
         Q_dot = self.C1 / math.sqrt(self.Rd) * (rho / self.rho0) ** 0.5 * (v / self.Vc) ** 3.15
         info = {"Q_dot": Q_dot, "ny": ny, "q": q / 1000, "tht": tht, "alpha": alpha}
 
-        state_dot = np.array([r_dot, gama_dot, v_dot, theta_dot, chi_dot])
-        return state_dot, info
+        x_dot = np.array([r_dot, gama_dot, phi_dot, v_dot, theta_dot, chi_dot])
+        return x_dot, info
 
     def v2alpha(self, v):
         # 输入速度m/s,输出攻角(度),这是CAV本身的设计决定的,不需要改变
@@ -107,10 +87,10 @@ class CAV:
         rho = self.rho0 * math.exp(-h / self.beta)
         return rho
 
-    def alphama2clcd(self, alpha, ma, low=True):
+    def alphama2clcd(self, alpha, ma):
         # 攻角(度)马赫数转换为升力系数、阻力系数
         # cav-l数据，最大升阻比为2.4
-        if low == True:
+        if self.low == True:
             # 低升阻比数据
             p00 = -0.2892
             p10 = 0.07719
@@ -144,21 +124,76 @@ class CAV:
                  + p13 * alpha * ma ** 3 + p04 * ma ** 4
         else:
             # 高升阻比
-            pass
+            c1, c2 = 0, 0
         return cl, cd
 
 
+class AircraftEnv(CAV):
+    """
+    编写飞行器Markov模型
+    分为几个部分
+    x 表示内部飞行器所有信息
+    state 外部所需要的信息
+    """
+
+    def __init__(self, random=False, low=True):
+        CAV.__init__(self, low)
+        self.x = None  # 内部循环状态变量
+        self.state = None  # 深度强化学习中或者与外界交互变量，长度小于x
+        self.t = 0
+        self.random = random
+
+        # 飞行器初始位置信息
+        self.h0 = 100  # Km
+        self.r0 = self.R0 + self.h0  # Km
+        self.v0 = 7200  # m/s
+        self.theta0 = -2 / 180 * math.pi  # 弧度  弹道倾角
+        self.chi0 = 55 / 180 * math.pi  # 弧度    弹道偏角
+        self.gama0 = 160 / 180 * math.pi  # 弧度  经度
+        self.phi0 = 5 / 180 * math.pi  # 弧度     维度
+        self.range0 = 0  # Km   射程
+        self.Q0 = 0
+        self.Osci0 = 0
+        self.x0 = np.hstack((self.r0 * 1000, self.gama0, self.phi0, self.v0, self.theta0, self.chi0))
+
+        # 进行初始化
+        self.reset()
+
+        # 环境维度
+        self.s_dim = len(self.state)
+        self.a_dim = None
+
+    def _x2state(self, x):
+        # 将x缩减为state
+        return x.copy()
+
+    def render(self):
+        pass
+
+    def reset(self):
+        self.t = 0
+        if self.random:
+            pass
+        else:
+            self.x = self.x0.copy()
+        return self._x2state(self.x)
+
+    def step(self):
+        pass
+
+
 if __name__ == '__main__':
-    cav = CAV()
-    mas = np.array([3.5, 5, 8, 15, 20, 23])
-    alphas = np.array([10, 15, 20])
-    cls = []
-    cds = []
-    for alpha in alphas:
-        temp_cls, temp_cds = [], []
-        for ma in mas:
-            temp_cl, temp_cd = cav.alphama2clcd(alpha, ma)
-            temp_cls.append(temp_cl)
-            temp_cds.append(temp_cd)
-        cls.append(temp_cls.copy())
-        cds.append(temp_cds.copy())
+    # cav = CAV()
+    # mas = np.array([3.5, 5, 8, 15, 20, 23])
+    # alphas = np.array([10, 15, 20])
+    # cls = []
+    # cds = []
+    # for alpha in alphas:
+    #     temp_cls, temp_cds = [], []
+    #     for ma in mas:
+    #         temp_cl, temp_cd = cav.alphama2clcd(alpha, ma)
+    #         temp_cls.append(temp_cl)
+    #         temp_cds.append(temp_cd)
+    #     cls.append(temp_cls.copy())
+    #     cds.append(temp_cds.copy())
+    cav = AircraftEnv()
