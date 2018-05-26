@@ -2,6 +2,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from scipy.optimize import root
+import scipy.io as sio
 
 
 class CAV:
@@ -207,11 +208,12 @@ class AircraftEnv(CAV):
 
     def h_v(self, tht):
         # 构建HV走廊
-        v = np.linspace(1800, 7200, 1000)  # 速度 m/s
+        v = np.linspace(self.v0, self.vf, 1001)  # 速度 m/s
         # h的下界值，h太小密度热会超约束
         h_Qmax = v.copy()
         h_nmax = v.copy()
         h_qmax = v.copy()
+        h_down = v.copy()
         # h的上界值，h太高会掉下来
         h_qegc = v.copy()  # 平衡滑翔条件
 
@@ -233,12 +235,14 @@ class AircraftEnv(CAV):
                                                  (2 * self.n_max_allow * self.m0 * self.g0)) / 1000
             h_qmax[i] = 1 * self.beta * math.log((self.rho0 * v[i] ** 2) / (2 * self.q_max_allow * 1000)) / 1000
 
+            h_down[i] = max(h_Qmax[i], h_nmax[i], h_qmax[i])
             # 计算平衡滑翔的对应的高度
             res = root(f, 0, (v[i],))
             h_qegc[i] = res.x / 1000
         fig = plt.figure()
-        plt.plot(v, h_Qmax, v, h_nmax, v, h_qmax, v, h_qegc)
-        plt.legend(['h_Q_dot', 'h_n', 'h_q', 'h_qegc'])
+        plt.plot(v, h_Qmax, v, h_nmax, v, h_qmax, v, h_qegc, v, h_down)
+
+        plt.legend(['h_Q_dot', 'h_n', 'h_q', 'h_qegc', 'h_down'])
         plt.grid()
 
     def step(self, action):
@@ -275,5 +279,5 @@ if __name__ == '__main__':
         state_now, reward, done, info = cav.step(action)
         state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
     cav.plot(state_record)
-    # cav.h_v(0 / 180 * math.pi)
+    cav.h_v(0 / 180 * math.pi)
     plt.show()
