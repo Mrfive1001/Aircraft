@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+from scipy.optimize import root
 
 
 class CAV:
@@ -174,7 +175,7 @@ class AircraftEnv(CAV):
         self.vf = 1800  # m/s
         self.gamaf = 225 / 180 * math.pi  # 弧度
         self.phif = 25 / 180 * math.pi  # 弧度
-        self.rangef = self.phigamma2range(self.gama0, self.phi0, self.gamaf, self.phif)     # 射程km
+        self.rangef = self.phigamma2range(self.gama0, self.phi0, self.gamaf, self.phif)  # 射程km
 
         # 约束条件
         self.Q_dot_max_allow = 1200  # Kw/m2
@@ -204,8 +205,42 @@ class AircraftEnv(CAV):
         self.state = self._x2state(self.x)
         return self.state.copy()
 
+    def h_v(self, tht):
+        # 构建HV走廊
+        v = np.linspace(1800, 7200, 1000)  # 速度 m/s
+        # h的下界值，h太小密度热会超约束
+        h_Qmax = v.copy()
+        h_nmax = v.copy()
+        h_qmax = v.copy()
+        # h的上界值，h太高会掉下来
+        h_qegc = v.copy()  # 平衡滑翔条件
+
+        def f(h, vv):
+            g = self.h2g(h)
+            rho = self.h2rho(h)
+            r = self.R0 * 1000 + h
+            q = 0.5 * rho * vv ** 2  # 动压
+            l = q * cd * self.S  # 升力
+            return l * math.cos(tht) / self.m0 + (vv ** 2 / r) - g
+
+        for i in range(len(v)):
+            h_Qmax[i] = 2 * self.beta * math.log((self.C1 * (v[i] / self.Vc) ** 3.15) /
+                                                 (self.Q_dot_max_allow * (self.Rd ** 0.5))) / 1000
+            alpha = self.v2alpha(v[i])
+            cl, cd = self.alphama2clcd(alpha, v[i] / 340)
+            h_nmax[i] = 1 * self.beta * math.log((self.rho0 * v[i] ** 2 * self.S * (cl ** 2 + cd ** 2) ** 0.5) /
+                                                 (2 * self.n_max_allow * self.m0 * self.g0)) / 1000
+            h_qmax[i] = 1 * self.beta * math.log((self.rho0 * v[i] ** 2) / (2 * self.q_max_allow * 1000)) / 1000
+            res = root(f, h_qmax[i] * 1000, (v[i],))
+            h_qegc[i] = res.x / 1000
+
+        fig = plt.figure()
+        plt.plot(v, h_Qmax, v, h_nmax, v, h_qmax, v, h_qegc)
+        plt.legend(['h_Q_dot', 'h_n', 'h_q', 'h_qegc'])
+        plt.grid()
+
     def step(self, action):
-        # 假设倾侧角是action度
+        # 假设倾侧角是action度 正负90度范围
         # 使用固定序列的攻角
         v = self.x[3]
         alpha = self.v2alpha(v)
@@ -222,6 +257,12 @@ class AircraftEnv(CAV):
         info = info.copy()
         return self.state, reward, done, info
 
+    def plot(self, data):
+        # 画出轨迹的图，输入数据每行代表某一个时刻的状态量
+        t = np.arange(0, len(data), 1) * self.delta_t  # 时间
+        fig = plt.figure()
+        plt.plot(t, data[:, 3])
+
 
 if __name__ == '__main__':
     cav = AircraftEnv()
@@ -231,5 +272,6 @@ if __name__ == '__main__':
         action = np.random.rand(1) * 180 - 90
         state_now, reward, done, info = cav.step(action)
         state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
-    plt.plot(state_record[:, 3])
+    cav.plot(state_record)
+    cav.h_v(10 / 180 * math.pi)
     plt.show()
