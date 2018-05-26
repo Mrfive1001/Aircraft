@@ -239,11 +239,13 @@ class AircraftEnv(CAV):
             # 计算平衡滑翔的对应的高度
             res = root(f, 0, (v[i],))
             h_qegc[i] = res.x / 1000
-        fig = plt.figure()
-        plt.plot(v, h_Qmax, v, h_nmax, v, h_qmax, v, h_qegc, v, h_down)
 
-        plt.legend(['h_Q_dot', 'h_n', 'h_q', 'h_qegc', 'h_down'])
-        plt.grid()
+        np.savez('corrior_orginal.npy', vv=v, h_down=h_down, h_up=h_qegc)
+        # fig = plt.figure()
+        # plt.plot(v, h_Qmax, v, h_nmax, v, h_qmax, v, h_qegc, v, h_down)
+        #
+        # plt.legend(['h_Q_dot', 'h_n', 'h_q', 'h_qegc', 'h_down'])
+        # plt.grid()
 
     def step(self, action):
         # 假设倾侧角是action度 正负90度范围
