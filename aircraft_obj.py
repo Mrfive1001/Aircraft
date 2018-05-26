@@ -153,7 +153,7 @@ class AircraftEnv(CAV):
         self.x = None  # 内部循环状态变量
         self.state = None  # 深度强化学习中或者与外界交互变量，长度小于x
         self.t = 0
-        self.delta_t = 0.1  # 积分步长
+        self.delta_t = 1  # 积分步长
         self.random = random
 
         # 飞行器初始位置信息
@@ -220,10 +220,11 @@ class AircraftEnv(CAV):
             rho = self.h2rho(h)
             r = self.R0 * 1000 + h
             q = 0.5 * rho * vv ** 2  # 动压
-            l = q * cd * self.S  # 升力
+            l = q * cl * self.S  # 升力
             return l * math.cos(tht) / self.m0 + (vv ** 2 / r) - g
 
         for i in range(len(v)):
+            # 计算三个等式
             h_Qmax[i] = 2 * self.beta * math.log((self.C1 * (v[i] / self.Vc) ** 3.15) /
                                                  (self.Q_dot_max_allow * (self.Rd ** 0.5))) / 1000
             alpha = self.v2alpha(v[i])
@@ -231,9 +232,10 @@ class AircraftEnv(CAV):
             h_nmax[i] = 1 * self.beta * math.log((self.rho0 * v[i] ** 2 * self.S * (cl ** 2 + cd ** 2) ** 0.5) /
                                                  (2 * self.n_max_allow * self.m0 * self.g0)) / 1000
             h_qmax[i] = 1 * self.beta * math.log((self.rho0 * v[i] ** 2) / (2 * self.q_max_allow * 1000)) / 1000
-            res = root(f, h_qmax[i] * 1000, (v[i],))
-            h_qegc[i] = res.x / 1000
 
+            # 计算平衡滑翔的对应的高度
+            res = root(f, 0, (v[i],))
+            h_qegc[i] = res.x / 1000
         fig = plt.figure()
         plt.plot(v, h_Qmax, v, h_nmax, v, h_qmax, v, h_qegc)
         plt.legend(['h_Q_dot', 'h_n', 'h_q', 'h_qegc'])
@@ -268,10 +270,10 @@ if __name__ == '__main__':
     cav = AircraftEnv()
     state_now = cav.reset()
     state_record = state_now.copy()
-    for i in range(1000):
+    for i in range(1500):
         action = np.random.rand(1) * 180 - 90
         state_now, reward, done, info = cav.step(action)
         state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
     cav.plot(state_record)
-    cav.h_v(10 / 180 * math.pi)
+    # cav.h_v(0 / 180 * math.pi)
     plt.show()
