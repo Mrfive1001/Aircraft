@@ -185,11 +185,13 @@ class AircraftEnv(CAV):
         self.q_max_allow = 200  # Kpa
 
         # 读取HV走廊
-        HV = np.load('corrior.npz')
-        self.vv = HV['vv']
-        self.h_down = HV['h_down']
-        self.h_up = HV['h_up']
-
+        try:
+            HV = np.load('corrior.npz')
+            self.vv = HV['vv']
+            self.h_down = HV['h_down']
+            self.h_up = HV['h_up']
+        except:
+            pass
         # 进行初始化
         self.reset()
 
@@ -283,8 +285,8 @@ class AircraftEnv(CAV):
                 h_down_change[i] = (h_down_change[i - 1] - self.hf) * (v[i] - self.vf) / (v[i - 1] - self.vf) + self.hf
                 h_qegc_change[i] = (h_qegc_change[i - 1] - self.hf) * (v[i] - self.vf) / (v[i - 1] - self.vf) + self.hf
 
-        np.savez('corrior_orginal.npy', vv=v, h_down=h_down, h_up=h_qegc)
-        np.savez('corrior.npy', vv=v, h_down=h_down_change, h_up=h_qegc_change)
+        np.savez('corrior_orginal', vv=v, h_down=h_down, h_up=h_qegc)
+        np.savez('corrior', vv=v, h_down=h_down_change, h_up=h_qegc_change)
 
         # 将其显示
         fig = plt.figure()
@@ -326,6 +328,6 @@ if __name__ == '__main__':
         action = np.random.rand(1) * 180 - 90
         state_now, reward, done, info = cav.step(action)
         state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
-        # cav.plot(state_record)
-        # cav.h_v(0)
-        # plt.show()
+    cav.plot(state_record)
+    cav.h_v(0)
+    plt.show()
