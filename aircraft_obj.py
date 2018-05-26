@@ -2,6 +2,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from scipy.optimize import root
+from scipy.interpolate import interp1d
 import scipy.io as sio
 
 
@@ -183,6 +184,12 @@ class AircraftEnv(CAV):
         self.n_max_allow = 4  # g0
         self.q_max_allow = 200  # Kpa
 
+        # 读取HV走廊
+        HV = np.load('corrior.npz')
+        self.vv = HV['vv']
+        self.h_down = HV['h_down']
+        self.h_up = HV['h_up']
+
         # 进行初始化
         self.reset()
 
@@ -205,6 +212,32 @@ class AircraftEnv(CAV):
             self.x = self.x0.copy()
         self.state = self._x2state(self.x)
         return self.state.copy()
+
+    def hv_w(self, w):
+        # 输入一个w值自动规划出一条弹道[0~1]
+        # 返回弹道记录
+        state_now = self.reset()
+        state_record = state_now.copy()
+        v2h_down = interp1d(self.vv, self.h_down)
+        v2h_up = interp1d(self.vv, self.h_up)
+        while True:
+            v = self.x[3]
+            h = 0.5 * (v2h_down(v) + v2h_up(v))
+            tht = self.v2tht(h, v) / math.pi * 180
+            state_now, reward, done, info = self.step(action)
+            state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
+            if done:
+                break
+        return state_record.copy()
+
+    def v2tht(self, h, v):
+        g = self.h2g(h)
+        rho = self.h2rho(h)
+        r = self.R0 * 1000 + h
+        q = 0.5 * rho * v ** 2  # 动压
+        l = q * cl * self.S  # 升力
+        tht = math.acos(self.m0 * (g - v ** 2 / r) / l)
+        return tht
 
     def h_v(self, tht):
         # 构建HV走廊
@@ -267,13 +300,14 @@ class AircraftEnv(CAV):
         # 简单积分
         x_dot, info = self.get_x_dot(self.x, alpha, action)
         self.x += x_dot * self.delta_t
-
-        done = None
-
+        # 判断结束，以速度为指标
+        if self.x[3] <= self.vf:
+            done = True
+        else:
+            done = False
         self.state = self._x2state(self.x)
-
+        # 奖励函数
         reward = None
-
         info = info.copy()
         return self.state, reward, done, info
 
@@ -292,6 +326,6 @@ if __name__ == '__main__':
         action = np.random.rand(1) * 180 - 90
         state_now, reward, done, info = cav.step(action)
         state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
-    # cav.plot(state_record)
-    cav.h_v(0)
-    plt.show()
+        # cav.plot(state_record)
+        # cav.h_v(0)
+        # plt.show()
