@@ -220,13 +220,13 @@ class AircraftEnv(CAV):
         # 返回弹道记录
         state_now = self.reset()
         state_record = state_now.copy()
-        v2h_down = interp1d(self.vv, self.h_down)
-        v2h_up = interp1d(self.vv, self.h_up)
+        v2h_down = interp1d(self.vv, self.h_down, kind='quadratic')
+        v2h_up = interp1d(self.vv, self.h_up, kind='quadratic')
         while True:
             v = self.x[3]
-            h = 0.5 * (v2h_down(v) + v2h_up(v))
+            h = 0.5 * (v2h_down(min(v, self.v0)) + v2h_up(min(v, self.v0)))
             tht = self.v2tht(h, v) / math.pi * 180
-            state_now, reward, done, info = self.step(action)
+            state_now, reward, done, info = self.step(tht)
             state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
             if done:
                 break
@@ -237,6 +237,9 @@ class AircraftEnv(CAV):
         rho = self.h2rho(h)
         r = self.R0 * 1000 + h
         q = 0.5 * rho * v ** 2  # 动压
+
+        alpha = self.v2alpha(v)
+        cl, cd = self.alphama2clcd(alpha, v / 340)
         l = q * cl * self.S  # 升力
         tht = math.acos(self.m0 * (g - v ** 2 / r) / l)
         return tht
@@ -328,6 +331,7 @@ if __name__ == '__main__':
         action = np.random.rand(1) * 180 - 90
         state_now, reward, done, info = cav.step(action)
         state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
-    cav.plot(state_record)
-    cav.h_v(0)
-    plt.show()
+    # cav.plot(state_record)
+    # cav.h_v(0)
+    # plt.show()
+    cav.hv_w(0.5)
