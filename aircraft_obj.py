@@ -22,13 +22,6 @@ class CAV:
         self.rho0 = 1.225
         self.low = low
 
-        # 约束条件
-        self.hf = 20
-        self.vf = 1800
-        self.Q_dot_max_allow = 1200  # Kw/m2
-        self.n_max_allow = 4  # g0
-        self.q_max_allow = 200  # Kpa
-
     def get_x_dot(self, x, alpha, tht, p=0):
         # 对当前状态求导，得到状态导数
         # 输入当前状态、攻角(度)、倾侧角(度)、推力（沿机体坐标系x），输出状态导数
@@ -65,7 +58,7 @@ class CAV:
         return x_dot, info
 
     def v2alpha(self, v):
-        # 输入速度m/s,输出攻角(度),这是CAV本身的设计决定的,不需要改变
+        # 输入速度m/s,输出攻角(度),这是CAV_L本身的设计决定的,不需要改变
         v1 = 3100
         v2 = 4700
         alpha_max = 20
@@ -90,9 +83,9 @@ class CAV:
 
     def alphama2clcd(self, alpha, ma):
         # 攻角(度)马赫数转换为升力系数、阻力系数
-        # cav-l数据，最大升阻比为2.4
         if self.low == True:
-            # 低升阻比数据
+            # 林哥毕业设计使用的是CAV-L
+            # 低升阻比数据 cav-l数据，最大升阻比为2.4
             p00 = -0.2892
             p10 = 0.07719
             p01 = 0.03159
@@ -136,6 +129,15 @@ class CAV:
                  (8.114e-06) * alpha ** 2 * ma ** 2
         return cl, cd
 
+    def phigamma2range(self, gamma0, phi0, gamma1, phi1):
+        # 给出两点的经纬度计算射程
+        ad = 2 * math.cos(phi0) * math.sin((gamma1 - gamma0) / 2)
+        ec = 2 * math.cos(phi1) * math.sin((gamma1 - gamma0) / 2)
+        cd = 2 * math.sin((phi1 - phi0) / 2)
+        ac = (ad * ec + cd ** 2) ** 0.5
+        range = 2 * math.asin(ac / 2) * self.R0
+        return range
+
 
 class AircraftEnv(CAV):
     """
@@ -165,6 +167,19 @@ class AircraftEnv(CAV):
         self.Q0 = 0
         self.Osci0 = 0
         self.x0 = np.hstack((self.r0 * 1000, self.gama0, self.phi0, self.v0, self.theta0, self.chi0, self.range0))
+
+        # 飞行器终点位置 终端位置高度速度射程
+        self.hf = 20  # km
+        self.rf = self.R0 + self.hf  # km
+        self.vf = 1800  # m/s
+        self.gamaf = 225 / 180 * math.pi  # 弧度
+        self.phif = 25 / 180 * math.pi  # 弧度
+        self.rangef = self.phigamma2range(self.gama0, self.phi0, self.gamaf, self.phif)     # 射程km
+
+        # 约束条件
+        self.Q_dot_max_allow = 1200  # Kw/m2
+        self.n_max_allow = 4  # g0
+        self.q_max_allow = 200  # Kpa
 
         # 进行初始化
         self.reset()
