@@ -209,13 +209,16 @@ class AircraftEnv(CAV):
     def h_v(self, tht):
         # 构建HV走廊
         v = np.linspace(self.v0, self.vf, 1001)  # 速度 m/s
+        v_change = 2000  # 自己设定的临界速度来规划HV走廊
         # h的下界值，h太小密度热会超约束
         h_Qmax = v.copy()
         h_nmax = v.copy()
         h_qmax = v.copy()
-        h_down = v.copy()
+        h_down = v.copy()  # 下界
+        h_down_change = v.copy()  # 人为设定的末端下界
         # h的上界值，h太高会掉下来
         h_qegc = v.copy()  # 平衡滑翔条件
+        h_qegc_change = v.copy()  # 人为设定的末端上界
 
         def f(h, vv):
             g = self.h2g(h)
@@ -239,13 +242,22 @@ class AircraftEnv(CAV):
             # 计算平衡滑翔的对应的高度
             res = root(f, 0, (v[i],))
             h_qegc[i] = res.x / 1000
+            # 将末端走廊规划到一点，减少一个末端约束
+            if v[i] >= v_change:
+                h_down_change[i] = h_down[i]
+                h_qegc_change[i] = h_qegc[i]
+            else:
+                h_down_change[i] = (h_down_change[i - 1] - self.hf) * (v[i] - self.vf) / (v[i - 1] - self.vf) + self.hf
+                h_qegc_change[i] = (h_qegc_change[i - 1] - self.hf) * (v[i] - self.vf) / (v[i - 1] - self.vf) + self.hf
 
         np.savez('corrior_orginal.npy', vv=v, h_down=h_down, h_up=h_qegc)
-        # fig = plt.figure()
-        # plt.plot(v, h_Qmax, v, h_nmax, v, h_qmax, v, h_qegc, v, h_down)
-        #
-        # plt.legend(['h_Q_dot', 'h_n', 'h_q', 'h_qegc', 'h_down'])
-        # plt.grid()
+        np.savez('corrior.npy', vv=v, h_down=h_down_change, h_up=h_qegc_change)
+
+        # 将其显示
+        fig = plt.figure()
+        plt.plot(v, h_qegc_change, v, h_down_change, v, h_down, v, h_qegc)
+        plt.legend(['h_qegc_change', 'h_down_change', 'h_down', 'h_qegc'])
+        plt.grid()
 
     def step(self, action):
         # 假设倾侧角是action度 正负90度范围
@@ -280,6 +292,6 @@ if __name__ == '__main__':
         action = np.random.rand(1) * 180 - 90
         state_now, reward, done, info = cav.step(action)
         state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
-    cav.plot(state_record)
-    cav.h_v(0 / 180 * math.pi)
+    # cav.plot(state_record)
+    cav.h_v(0)
     plt.show()
