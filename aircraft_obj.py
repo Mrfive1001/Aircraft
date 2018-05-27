@@ -40,8 +40,8 @@ class CAV:
         # 气动力参数
         cl, cd = self.alphama2clcd(alpha, v / 340)  # 升力阻力系数
         q = 0.5 * rho * v ** 2  # 动压
-        d = q * cl * self.S  # 阻力
-        l = q * cd * self.S  # 升力
+        d = q * cd * self.S  # 阻力
+        l = q * cl * self.S  # 升力
         ny = math.sqrt((p * math.sin(alpha / 57.3) + l) ** 2 +
                        (p * math.cos(alpha / 57.3) - d) ** 2) / (self.m0 * self.g0)  # 过载
 
@@ -225,28 +225,42 @@ class AircraftEnv(CAV):
         v2h_up = interp1d(self.vv, self.h_up, kind='quadratic')
         h_refs = []
         h_cmds = []
+        # 追踪参数
         cmd_p = 0.5
         cmd_i = 0.2
+        lambda_h = 1
         while True:
             v = self.x[3]
-            h_ref = (1 - w) * v2h_down(min(v, self.v0)) + w * v2h_up(min(v, self.v0))   # km
+            h_ref = (1 - w) * v2h_down(min(v, self.v0)) + w * v2h_up(min(v, self.v0))  # m
             if v > 7000:
                 tht = 0
                 h_cmd = h_ref
             else:
                 h_cmd = (1 - cmd_p) * h_cmds[-1] + cmd_p * h_ref + cmd_i * self.delta_t * (h_cmds[-1] - h_refs[-1])
-                h_cmd_dot = (h_cmd-h_cmds[-1])/self.delta_t
-                h_cmd_dot2 = ((h_cmd-h_cmds[-1])-(h_cmds[-1]-h_cmds[-2]))/(self.delta_t)**2
-
+                h_cmd_dot = (h_cmd - h_cmds[-1]) / self.delta_t
+                h_cmd_dot2 = ((h_cmd - h_cmds[-1]) - (h_cmds[-1] - h_cmds[-2])) / (self.delta_t) ** 2
+                # 气动方面计算
                 r = self.x[0]
+                h = h = r - self.R0 * 1000  # 高度
                 theta = self.x[4]
+                g = self.h2g(h)
+                rho = self.h2rho(h)
+                alpha = self.v2alpha(v)
+                cl, cd = self.alphama2clcd(alpha, v / 340)
+                q = 0.5 * rho * v ** 2  # 动压
+                l = q * cl * self.S  # 升力
+                d = q * cd * self.S  # 阻力
+                # 计算各导数
+                v_dot = - d / self.m0 - g * math.sin(theta)
+                h_dot = v * math.sin(theta)
+                delta_h = h - h_cmd
+                delta_h_dot = h_dot - h_cmd_dot
+                h_dot2 = h_cmd_dot2 - 2 * delta_h_dot * lambda_h - lambda_h ** 2
 
-                h_dot = v*math.sin(theta)
-
-
-
-                tht = self.v2tht(h * 1000, v) / math.pi * 180
-
+                cos_tht = ((h_dot2 - v_dot * math.sin(theta)) / math.cos(theta) +
+                           (g - v ** 2 / r) * math.cos(theta)) * self.m0 / l
+                cos_tht = cos_tht if (-1 <= cos_tht <= 1) else (1 if cos_tht > 1 else -1)
+                tht = math.acos(cos_tht if math.fabs(cos_tht) <= 1 else 1)  # 弧度
             h_refs.append(h_ref)
             h_cmds.append(h_cmd)
             state_now, reward, done, info = self.step(tht)
@@ -258,7 +272,6 @@ class AircraftEnv(CAV):
     def h2tht(self):
         # 设计倾侧角来跟踪高度
         pass
-
 
     def hv2tht(self, h, v):
         # h 单位m，v单位m/s
@@ -342,8 +355,9 @@ class AircraftEnv(CAV):
         # 画图
         fig_HV = plt.figure()
         ax = fig_HV.add_subplot(111)
-        plt.plot(v, h_qegc1/1000, v, h_qegc2/1000, '--', v, h_qmax1/1000, v, h_qmax2/1000, '-.', v, h_Qmax1/1000,
-                 v, h_Qmax2/1000, ':', v, h_nmax1/1000, v, h_nmax2/1000, ':')
+        plt.plot(v, h_qegc1 / 1000, v, h_qegc2 / 1000, '--', v, h_qmax1 / 1000, v, h_qmax2 / 1000, '-.', v,
+                 h_Qmax1 / 1000,
+                 v, h_Qmax2 / 1000, ':', v, h_nmax1 / 1000, v, h_nmax2 / 1000, ':')
         plt.annotate('$Q_{max} = %s Kw/m^2$' % (Q_maxs[0]), (2503, -3.7), (2892, -7),  # 文字，图像中的坐标，文字的坐标
                      arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
         plt.annotate('$Q_{max} = %s Kw/m^2$' % (Q_maxs[1]), (2293, -9), (2792, -14.3),
@@ -358,7 +372,7 @@ class AircraftEnv(CAV):
                      arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
         plt.annotate('$tht = %s^\circ$' % (thts[0]), (4519, 43.4), (4185, 55),
                      arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
-        plt.annotate('$tht = %.2s^\circ $' % (thts[1] *57.3), (3850, 36), (3900, 50),
+        plt.annotate('$tht = %.2s^\circ $' % (thts[1] * 57.3), (3850, 36), (3900, 50),
                      arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
         ax.set_xlabel(r'v(m/s)')
         ax.set_ylabel(r'h(km)')
@@ -390,7 +404,7 @@ class AircraftEnv(CAV):
         t = np.arange(0, len(data), 1) * self.delta_t  # 时间
         fig = plt.figure()
         # plt.plot(t, data[:, 3])
-        # plt.plot(self.vv, self.h_up, self.vv, self.h_down)
+        plt.plot(self.vv, self.h_up / 1000, self.vv, self.h_down / 1000)
         plt.plot(data[:, 3], data[:, 0] / 1000 - self.R0)
         plt.grid()
 
@@ -401,4 +415,4 @@ if __name__ == '__main__':
     cav.h_v()  # 进行HV走廊敏感性分析
     plt.show()
     # TODO 保存轨迹并进行神经网络构建
-    # TODO
+    # TODO 倾侧角跟踪

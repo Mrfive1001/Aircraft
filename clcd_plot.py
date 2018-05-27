@@ -47,7 +47,7 @@ def plot_craft(object):
     ax.set_zlabel(r'Cl')
     ax.set_xlabel(r'$\alpha$/$^\circ$')
     ax.invert_xaxis()  # 将x轴方向反转
-    ax.plot_surface(alphas, mas, cds, rstride=1, cstride=1, cmap='rainbow')
+    ax.plot_surface(alphas, mas, cls, rstride=1, cstride=1, cmap='rainbow')
 
     ax = fig.add_subplot(122, projection='3d')
     ax.set_title(u'阻力系数')
@@ -55,7 +55,7 @@ def plot_craft(object):
     ax.set_ylabel(r'Mach')
     ax.set_zlabel(r'Cd')
     ax.set_xlabel(r'$\alpha$/$^\circ$')
-    ax.plot_surface(alphas, mas, cls, rstride=1, cstride=1, cmap='rainbow')
+    ax.plot_surface(alphas, mas, cds, rstride=1, cstride=1, cmap='rainbow')
     plt.savefig(os.path.join('Figures', '低升阻比升力阻力.png'))
 
     fig = plt.figure()
