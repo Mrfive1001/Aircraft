@@ -20,6 +20,12 @@ def get_memory(groups_num, load=True):
     np.save('memory.npy', memory)
 
 
+
 if __name__ == '__main__':
     cav = AircraftEnv()
-    get_memory(100, load=False)
+    # get_memory(100, load=False)
+    s, info = cav.hv_w(0.5)
+    cav.plot(s)
+    # fig = plt.figure()
+    # plt.plot(s[:, 3], info['control'])
+    plt.show()

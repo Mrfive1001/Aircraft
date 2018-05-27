@@ -221,19 +221,21 @@ class AircraftEnv(CAV):
         # 返回弹道记录
         state_now = self.reset()
         state_record = state_now.copy()
+        control = [22]
         v2h_down = interp1d(self.vv, self.h_down, kind='quadratic')
         v2h_up = interp1d(self.vv, self.h_up, kind='quadratic')
         h_refs = []
         h_cmds = []
         # 追踪参数
-        cmd_p = 0.5
+        cmd_p = 0.8
         cmd_i = 0.2
-        lambda_h = 1
+        lambda_h = 0.01
+        info = {}
         while True:
             v = self.x[3]
             h_ref = (1 - w) * v2h_down(min(v, self.v0)) + w * v2h_up(min(v, self.v0))  # m
             if v > 7000:
-                tht = 0
+                tht = 22 / 57.3
                 h_cmd = h_ref
             else:
                 h_cmd = (1 - cmd_p) * h_cmds[-1] + cmd_p * h_ref + cmd_i * self.delta_t * (h_cmds[-1] - h_refs[-1])
@@ -259,15 +261,17 @@ class AircraftEnv(CAV):
 
                 cos_tht = ((h_dot2 - v_dot * math.sin(theta)) / math.cos(theta) +
                            (g - v ** 2 / r) * math.cos(theta)) * self.m0 / l
-                cos_tht = cos_tht if (-1 <= cos_tht <= 1) else (1 if cos_tht > 1 else -1)
+                cos_tht = cos_tht if (0 <= cos_tht <= 1) else (1 if cos_tht > 1 else 0)
                 tht = math.acos(cos_tht if math.fabs(cos_tht) <= 1 else 1)  # 弧度
             h_refs.append(h_ref)
             h_cmds.append(h_cmd)
-            state_now, reward, done, info = self.step(tht)
+            control.append(tht * 57.3)
+            state_now, reward, done, info = self.step(tht * 57.3)
             state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
             if done:
                 break
-        return state_record.copy()
+        info['control'] = np.array(control)
+        return state_record.copy(), info
 
     def h2tht(self):
         # 设计倾侧角来跟踪高度
@@ -292,7 +296,7 @@ class AircraftEnv(CAV):
         # 对几个典型的走廊进行对比
         # tht[0,40] n_max[3,4] Q_max[1200,1300] q_max[200,240]
         thts = [0, 40 / 180 * math.pi]
-        n_maxs = [3, 4]
+        n_maxs = [4, 3]
         Q_maxs = [1200, 1300]
         q_maxs = [200, 400]
 
@@ -305,7 +309,8 @@ class AircraftEnv(CAV):
         h_nmax2 = v.copy()
         h_qmax1 = v.copy()
         h_qmax2 = v.copy()
-        h_down = v.copy()  # 下界
+        h_down1 = v.copy()  # 下界
+        h_down2 = v.copy()  # 下界
         h_down_change = v.copy()  # 人为设定的末端下界
         # h的上界值，h太高会掉下来
         h_qegc1 = v.copy()  # 平衡滑翔条件
@@ -323,9 +328,9 @@ class AircraftEnv(CAV):
 
         for i in range(len(v)):
             # 计算三个等式
-            for tht, n_max, Q_max, q_max, h_nmax, h_Qmax, h_qmax, h_qegc in zip(
+            for tht, n_max, Q_max, q_max, h_nmax, h_Qmax, h_qmax, h_qegc, h_down in zip(
                     thts, n_maxs, Q_maxs, q_maxs, [h_nmax1, h_nmax2], [h_Qmax1, h_Qmax2], [h_qmax1, h_qmax2],
-                    [h_qegc1, h_qegc2]):
+                    [h_qegc1, h_qegc2], [h_down1, h_down2]):
                 h_Qmax[i] = 2 * self.beta * math.log((self.C1 * (v[i] / self.Vc) ** 3.15) /
                                                      (Q_max * (self.Rd ** 0.5)))
                 alpha = self.v2alpha(v[i])
@@ -340,18 +345,17 @@ class AircraftEnv(CAV):
                 h_qegc[i] = res.x
                 # 将末端走廊规划到一点，减少一个末端约束
                 if v[i] >= v_change:
-                    h_down_change[i] = h_down[i]
-                    h_qegc_change[i] = h_qegc[i]
+                    h_down_change[i] = h_down1[i]
+                    h_qegc_change[i] = h_qegc1[i]
                 else:
-                    h_down_change[i] = (h_down_change[i - 1] - self.hf) * (v[i] - self.vf) / \
-                                       (v[i - 1] - self.vf) + self.hf
-                    h_qegc_change[i] = (h_qegc_change[i - 1] - self.hf) * (v[i] - self.vf) / \
-                                       (v[i - 1] - self.vf) + self.hf
+                    h_down_change[i] = (h_down_change[i - 1] - self.hf * 1000) * (v[i] - self.vf) / \
+                                       (v[i - 1] - self.vf) + self.hf * 1000
+                    h_qegc_change[i] = (h_qegc_change[i - 1] - self.hf * 1000) * (v[i] - self.vf) / \
+                                       (v[i - 1] - self.vf) + self.hf * 1000
 
         np.savez('corrior_orginal', vv=v, h_down=h_down, h_up=h_qegc)
         np.savez('corrior', vv=v, h_down=h_down_change, h_up=h_qegc_change)
 
-        # 将其显示
         # 画图
         fig_HV = plt.figure()
         ax = fig_HV.add_subplot(111)
@@ -366,9 +370,9 @@ class AircraftEnv(CAV):
                      arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
         plt.annotate('$q_{max} = %s KPa$' % (q_maxs[1]), (6036, 28.9), (6610, 20),
                      arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
-        plt.annotate('$n_{max} = %s $' % (n_maxs[0]), (2373.3, 18.43), (2318, 4),
+        plt.annotate('$n_{max} = %s $' % (n_maxs[1]), (2373.3, 18.43), (2318, 4),
                      arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
-        plt.annotate('$n_{max} = %s $' % (n_maxs[1]), (1834.4, 12.9), (2004, 0),
+        plt.annotate('$n_{max} = %s $' % (n_maxs[0]), (1834.4, 12.9), (2004, 0),
                      arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
         plt.annotate('$tht = %s^\circ$' % (thts[0]), (4519, 43.4), (4185, 55),
                      arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
