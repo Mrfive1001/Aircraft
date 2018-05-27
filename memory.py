@@ -23,7 +23,7 @@ def get_memory(groups_num, load=True):
 if __name__ == '__main__':
     cav = AircraftEnv()
     # get_memory(100, load=False)
-    s, info = cav.hv_w(0.3)
+    s, info = cav.hv_w(0.5)
     cav.plot(s)
-    plt.plot(s[:, 3], info['h_refs'] / 1000)
+    # plt.plot(s[:, 3], info['h_refs'] / 1000)
     plt.show()

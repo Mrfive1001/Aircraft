@@ -200,6 +200,9 @@ class AircraftEnv(CAV):
         self.s_dim = len(self.state)
         self.a_dim = None
 
+        # 暂存变量
+        self.hv_temp = None
+
     def _x2state(self, x):
         # 将x缩减为state
         return x.copy()
@@ -228,9 +231,9 @@ class AircraftEnv(CAV):
         h_refs = []
         h_cmds = []
         # 追踪参数
-        cmd_p = 0.8
+        cmd_p = 0.9
         cmd_i = 0.2
-        lambda_h = 0.1
+        lambda_h = 1
         info = {}
         while True:
             v = self.x[3]
@@ -330,6 +333,33 @@ class AircraftEnv(CAV):
             l = q * cl * self.S  # 升力
             return l * math.cos(tht) / self.m0 + (vv ** 2 / r) - g
 
+        def f_up_down(v, mode, h2v, self=self):
+            # mode==0指上边界
+            h = h2v(v)
+            x = self.x0.copy()
+            x[0], x[3] = h + self.R0 * 1000, v
+            action = 90 if mode == 0 else 0
+            vs = []
+            hs = []
+            while True:
+                v = x[3]
+                alpha = self.v2alpha(v)
+                # 简单积分
+                x_dot, info = self.get_x_dot(x, alpha, action)
+                x += x_dot * self.delta_t
+                h = x[0] - self.R0 * 1000
+                vs.append(v)
+                hs.append(h)
+                h_diff = h - self.hf * 1000
+                if x[3] < self.vf:
+                    ceq = math.fabs(h_diff / 10) + math.fabs(x[3] - self.vf)
+                    break
+                elif (mode == 0 and h_diff < 0) or (mode == 1 and h_diff > 0):
+                    ceq = math.fabs(x[3] - self.vf)
+                    break
+            self.hv_temp = dict(vs=np.array(vs), hs=np.array(hs))
+            return ceq
+
         for i in range(len(v)):
             # 计算三个等式
             for tht, n_max, Q_max, q_max, h_nmax, h_Qmax, h_qmax, h_qegc, h_down in zip(
@@ -347,15 +377,32 @@ class AircraftEnv(CAV):
                 # 计算平衡滑翔的对应的高度
                 res = root(f, 0, (v[i], tht))
                 h_qegc[i] = res.x
-                # 将末端走廊规划到一点，减少一个末端约束
-                if v[i] >= v_change:
-                    h_down_change[i] = h_down1[i]
-                    h_qegc_change[i] = h_qegc1[i]
-                else:
-                    h_down_change[i] = (h_down_change[i - 1] - self.hf * 1000) * (v[i] - self.vf) / \
-                                       (v[i - 1] - self.vf) + self.hf * 1000
-                    h_qegc_change[i] = (h_qegc_change[i - 1] - self.hf * 1000) * (v[i] - self.vf) / \
-                                       (v[i - 1] - self.vf) + self.hf * 1000
+        # 将末端走廊规划到一点，减少一个末端约束
+        # 找到上边界的临界点
+        v2h_down = interp1d(v, h_down1, kind='quadratic')
+        v2h_up = interp1d(v, h_qegc1, kind='quadratic')
+        res = root(f_up_down, 2000, (0, v2h_up))
+        v_up_change = res.x[0]
+        f_up_down(v_up_change, 0, v2h_up)
+        vs_up = self.hv_temp['vs'].copy()
+        hs_up = self.hv_temp['hs'].copy()
+        v2h_up = interp1d(vs_up, hs_up, kind='quadratic')
+        res = root(f_up_down, 2000, (1, v2h_down))
+        v_down_change = res.x[0]
+        f_up_down(v_down_change, 1, v2h_down)
+        vs_down = self.hv_temp['vs'].copy()
+        hs_down = self.hv_temp['hs'].copy()
+        v2h_down = interp1d(vs_down, hs_down, kind='quadratic')
+
+        for i in range(len(v)):
+            if v[i] >= v_down_change:
+                h_down_change[i] = h_down1[i]
+            else:
+                h_down_change[i] = v2h_down(min(max(v[i], min(vs_down)), max(vs_down)))
+            if v[i] >= v_up_change:
+                h_qegc_change[i] = h_qegc1[i]
+            else:
+                h_qegc_change[i] = v2h_up(min(max(v[i], min(vs_up)), max(vs_up)))
 
         np.savez('corrior_orginal', vv=v, h_down=h_down, h_up=h_qegc)
         np.savez('corrior', vv=v, h_down=h_down_change, h_up=h_qegc_change)
@@ -422,3 +469,4 @@ if __name__ == '__main__':
     cav.h_v()  # 进行HV走廊敏感性分析
     plt.show()
     # TODO 保存轨迹并进行神经网络构建
+    # TODO 复合走廊构建
