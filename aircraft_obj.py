@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import root
 from scipy.interpolate import interp1d
 import scipy.io as sio
+import os
 
 
 class CAV:
@@ -177,7 +178,7 @@ class AircraftEnv(CAV):
         self.vf = 1800  # m/s
         self.gamaf = 225 / 180 * math.pi  # 弧度
         self.phif = 25 / 180 * math.pi  # 弧度
-        self.rangef = self.phigamma2range(self.gama0, self.phi0, self.gamaf, self.phif)  # 射程km
+        self.rangef = self.phigamma2range(self.gama0, self.phi0, self.gamaf, self.phif)  # 射程km 与 range*self.R0差不多
 
         # 约束条件
         self.Q_dot_max_allow = 1200  # Kw/m2
@@ -216,7 +217,7 @@ class AircraftEnv(CAV):
         return self.state.copy()
 
     def hv_w(self, w):
-        # 输入一个w值自动规划出一条弹道[0~1]
+        # 输入一个w值自动规划出一条弹道[0~1] w越大，离上界越近
         # 返回弹道记录
         state_now = self.reset()
         state_record = state_now.copy()
@@ -224,8 +225,11 @@ class AircraftEnv(CAV):
         v2h_up = interp1d(self.vv, self.h_up, kind='quadratic')
         while True:
             v = self.x[3]
-            h = 0.5 * (v2h_down(min(v, self.v0)) + v2h_up(min(v, self.v0)))
-            tht = self.v2tht(h, v) / math.pi * 180
+            h = (1 - w) * v2h_down(min(v, self.v0)) + w * v2h_up(min(v, self.v0))
+            if v > 7000:
+                tht = 0
+            else:
+                tht = self.v2tht(h * 1000, v) / math.pi * 180
             state_now, reward, done, info = self.step(tht)
             state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
             if done:
@@ -233,15 +237,16 @@ class AircraftEnv(CAV):
         return state_record.copy()
 
     def v2tht(self, h, v):
+        # h 单位m，v单位m/s
         g = self.h2g(h)
         rho = self.h2rho(h)
         r = self.R0 * 1000 + h
         q = 0.5 * rho * v ** 2  # 动压
-
         alpha = self.v2alpha(v)
         cl, cd = self.alphama2clcd(alpha, v / 340)
         l = q * cl * self.S  # 升力
-        tht = math.acos(self.m0 * (g - v ** 2 / r) / l)
+        a = self.m0 * (g - v ** 2 / r) / l
+        tht = math.acos(min(self.m0 * (g - v ** 2 / r) / l, 1))
         return tht
 
     def h_v(self, tht):
@@ -259,6 +264,7 @@ class AircraftEnv(CAV):
         h_qegc_change = v.copy()  # 人为设定的末端上界
 
         def f(h, vv):
+            # h单位m v单位m/s
             g = self.h2g(h)
             rho = self.h2rho(h)
             r = self.R0 * 1000 + h
@@ -293,9 +299,13 @@ class AircraftEnv(CAV):
 
         # 将其显示
         fig = plt.figure()
+        ax = fig.add_subplot(111)
         plt.plot(v, h_qegc_change, v, h_down_change, v, h_down, v, h_qegc)
+        ax.set_xlabel(r'v(m/s)')
+        ax.set_ylabel(r'h(km)')
         plt.legend(['h_qegc_change', 'h_down_change', 'h_down', 'h_qegc'])
         plt.grid()
+        plt.savefig(os.path.join('Figures', 'HV走廊有效性.png'))
 
     def step(self, action):
         # 假设倾侧角是action度 正负90度范围
@@ -320,7 +330,10 @@ class AircraftEnv(CAV):
         # 画出轨迹的图，输入数据每行代表某一个时刻的状态量
         t = np.arange(0, len(data), 1) * self.delta_t  # 时间
         fig = plt.figure()
-        plt.plot(t, data[:, 3])
+        # plt.plot(t, data[:, 3])
+        plt.plot(self.vv, self.h_up, self.vv, self.h_down)
+        plt.plot(data[:, 3], data[:, 0] / 1000 - self.R0)
+        plt.grid()
 
 
 if __name__ == '__main__':
@@ -332,6 +345,8 @@ if __name__ == '__main__':
         state_now, reward, done, info = cav.step(action)
         state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
     # cav.plot(state_record)
-    # cav.h_v(0)
-    # plt.show()
-    cav.hv_w(0.5)
+    cav.h_v(0)
+
+    state_record = cav.hv_w(1)
+    cav.plot(state_record)
+    plt.show()
