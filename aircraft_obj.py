@@ -221,7 +221,8 @@ class AircraftEnv(CAV):
         # 返回弹道记录
         state_now = self.reset()
         state_record = state_now.copy()
-        control = [22]
+        cons = 22
+        control = [cons]
         v2h_down = interp1d(self.vv, self.h_down, kind='quadratic')
         v2h_up = interp1d(self.vv, self.h_up, kind='quadratic')
         h_refs = []
@@ -235,7 +236,7 @@ class AircraftEnv(CAV):
             v = self.x[3]
             h_ref = (1 - w) * v2h_down(min(v, self.v0)) + w * v2h_up(min(v, self.v0))  # m
             if v > 7000:
-                tht = 22 / 57.3
+                tht = cons / 57.3
                 h_cmd = h_ref
             else:
                 h_cmd = (1 - cmd_p) * h_cmds[-1] + cmd_p * h_ref + cmd_i * self.delta_t * (h_cmds[-1] - h_refs[-1])
@@ -269,13 +270,13 @@ class AircraftEnv(CAV):
             state_now, reward, done, info = self.step(tht * 57.3)
             state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
             if done:
+                h_refs.append(h_ref)
+                h_cmds.append(h_cmd)
                 break
         info['control'] = np.array(control)
+        info['h_refs'] = np.array(h_refs)
+        info['h_cmds'] = np.array(h_cmds)
         return state_record.copy(), info
-
-    def h2tht(self):
-        # 设计倾侧角来跟踪高度
-        pass
 
     def hv2tht(self, h, v):
         # h 单位m，v单位m/s
@@ -407,7 +408,6 @@ class AircraftEnv(CAV):
         # 画出轨迹的图，输入数据每行代表某一个时刻的状态量
         t = np.arange(0, len(data), 1) * self.delta_t  # 时间
         fig = plt.figure()
-        # plt.plot(t, data[:, 3])
         plt.plot(self.vv, self.h_up / 1000, self.vv, self.h_down / 1000)
         plt.plot(data[:, 3], data[:, 0] / 1000 - self.R0)
         plt.grid()
