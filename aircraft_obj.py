@@ -249,21 +249,32 @@ class AircraftEnv(CAV):
         tht = math.acos(min(self.m0 * (g - v ** 2 / r) / l, 1))
         return tht
 
-    def h_v(self, tht):
+    def h_v(self):
         # 构建HV走廊
+        # 对几个典型的走廊进行对比
+        # tht[0,40] n_max[3,4] Q_max[1200,1300] q_max[200,240]
+        thts = [0, 40 / 180 * math.pi]
+        n_maxs = [3, 4]
+        Q_maxs = [1200, 1300]
+        q_maxs = [200, 400]
+
         v = np.linspace(self.v0, self.vf, 1001)  # 速度 m/s
         v_change = 2000  # 自己设定的临界速度来规划HV走廊
         # h的下界值，h太小密度热会超约束
-        h_Qmax = v.copy()
-        h_nmax = v.copy()
-        h_qmax = v.copy()
+        h_Qmax1 = v.copy()
+        h_Qmax2 = v.copy()
+        h_nmax1 = v.copy()
+        h_nmax2 = v.copy()
+        h_qmax1 = v.copy()
+        h_qmax2 = v.copy()
         h_down = v.copy()  # 下界
         h_down_change = v.copy()  # 人为设定的末端下界
         # h的上界值，h太高会掉下来
-        h_qegc = v.copy()  # 平衡滑翔条件
+        h_qegc1 = v.copy()  # 平衡滑翔条件
+        h_qegc2 = v.copy()  # 平衡滑翔条件
         h_qegc_change = v.copy()  # 人为设定的末端上界
 
-        def f(h, vv):
+        def f(h, vv, tht):
             # h单位m v单位m/s
             g = self.h2g(h)
             rho = self.h2rho(h)
@@ -274,38 +285,61 @@ class AircraftEnv(CAV):
 
         for i in range(len(v)):
             # 计算三个等式
-            h_Qmax[i] = 2 * self.beta * math.log((self.C1 * (v[i] / self.Vc) ** 3.15) /
-                                                 (self.Q_dot_max_allow * (self.Rd ** 0.5))) / 1000
-            alpha = self.v2alpha(v[i])
-            cl, cd = self.alphama2clcd(alpha, v[i] / 340)
-            h_nmax[i] = 1 * self.beta * math.log((self.rho0 * v[i] ** 2 * self.S * (cl ** 2 + cd ** 2) ** 0.5) /
-                                                 (2 * self.n_max_allow * self.m0 * self.g0)) / 1000
-            h_qmax[i] = 1 * self.beta * math.log((self.rho0 * v[i] ** 2) / (2 * self.q_max_allow * 1000)) / 1000
+            for tht, n_max, Q_max, q_max, h_nmax, h_Qmax, h_qmax, h_qegc in zip(
+                    thts, n_maxs, Q_maxs, q_maxs, [h_nmax1, h_nmax2], [h_Qmax1, h_Qmax2], [h_qmax1, h_qmax2],
+                    [h_qegc1, h_qegc2]):
+                h_Qmax[i] = 2 * self.beta * math.log((self.C1 * (v[i] / self.Vc) ** 3.15) /
+                                                     (Q_max * (self.Rd ** 0.5))) / 1000
+                alpha = self.v2alpha(v[i])
+                cl, cd = self.alphama2clcd(alpha, v[i] / 340)
+                h_nmax[i] = 1 * self.beta * math.log((self.rho0 * v[i] ** 2 * self.S * (cl ** 2 + cd ** 2) ** 0.5) /
+                                                     (2 * n_max * self.m0 * self.g0)) / 1000
+                h_qmax[i] = 1 * self.beta * math.log((self.rho0 * v[i] ** 2) / (2 * q_max * 1000)) / 1000
 
-            h_down[i] = max(h_Qmax[i], h_nmax[i], h_qmax[i])
-            # 计算平衡滑翔的对应的高度
-            res = root(f, 0, (v[i],))
-            h_qegc[i] = res.x / 1000
-            # 将末端走廊规划到一点，减少一个末端约束
-            if v[i] >= v_change:
-                h_down_change[i] = h_down[i]
-                h_qegc_change[i] = h_qegc[i]
-            else:
-                h_down_change[i] = (h_down_change[i - 1] - self.hf) * (v[i] - self.vf) / (v[i - 1] - self.vf) + self.hf
-                h_qegc_change[i] = (h_qegc_change[i - 1] - self.hf) * (v[i] - self.vf) / (v[i - 1] - self.vf) + self.hf
+                h_down[i] = max(h_Qmax[i], h_nmax[i], h_qmax[i])
+                # 计算平衡滑翔的对应的高度
+                res = root(f, 0, (v[i], tht))
+                h_qegc[i] = res.x / 1000
+                # 将末端走廊规划到一点，减少一个末端约束
+                if v[i] >= v_change:
+                    h_down_change[i] = h_down[i]
+                    h_qegc_change[i] = h_qegc[i]
+                else:
+                    h_down_change[i] = (h_down_change[i - 1] - self.hf) * (v[i] - self.vf) / \
+                                       (v[i - 1] - self.vf) + self.hf
+                    h_qegc_change[i] = (h_qegc_change[i - 1] - self.hf) * (v[i] - self.vf) / \
+                                       (v[i - 1] - self.vf) + self.hf
 
-        np.savez('corrior_orginal', vv=v, h_down=h_down, h_up=h_qegc)
-        np.savez('corrior', vv=v, h_down=h_down_change, h_up=h_qegc_change)
+        # np.savez('corrior_orginal', vv=v, h_down=h_down, h_up=h_qegc)
+        # np.savez('corrior', vv=v, h_down=h_down_change, h_up=h_qegc_change)
 
         # 将其显示
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        plt.plot(v, h_qegc_change, v, h_down_change, v, h_down, v, h_qegc)
+        # 画图
+        fig_HV = plt.figure()
+        ax = fig_HV.add_subplot(111)
+        plt.plot(v, h_qegc1, v, h_qegc2, '--', v, h_qmax1, v, h_qmax2, '-.', v, h_Qmax1,
+                 v, h_Qmax2, ':', v, h_nmax1, v, h_nmax2, ':')
+        plt.annotate('$Q_{max} = %s Kw/m^2$' % (Q_maxs[0]), (2503, -3.7), (2892, -7),  # 文字，图像中的坐标，文字的坐标
+                     arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
+        plt.annotate('$Q_{max} = %s Kw/m^2$' % (Q_maxs[1]), (2293, -9), (2792, -14.3),
+                     arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
+        plt.annotate('$q_{max} = %s KPa$' % (q_maxs[0]), (6290, 34.7), (6700, 24),
+                     arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
+        plt.annotate('$q_{max} = %s KPa$' % (q_maxs[1]), (6036, 28.9), (6610, 20),
+                     arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
+        plt.annotate('$n_{max} = %s $' % (n_maxs[0]), (2373.3, 18.43), (2318, 4),
+                     arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
+        plt.annotate('$n_{max} = %s $' % (n_maxs[1]), (1834.4, 12.9), (2004, 0),
+                     arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
+        plt.annotate('$tht = %s^\circ$' % (thts[0]), (4519, 43.4), (4185, 55),
+                     arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
+        plt.annotate('$tht = %.2s^\circ $' % (thts[1] / math.pi * 180), (3850, 36), (3900, 50),
+                     arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
         ax.set_xlabel(r'v(m/s)')
         ax.set_ylabel(r'h(km)')
-        plt.legend(['h_qegc_change', 'h_down_change', 'h_down', 'h_qegc'])
-        plt.grid()
-        plt.savefig(os.path.join('Figures', 'HV走廊有效性.png'))
+
+        ax.grid()
+        plt.savefig(os.path.join('Figures', 'HV走廊敏感性分析.png'))
 
     def step(self, action):
         # 假设倾侧角是action度 正负90度范围
@@ -331,22 +365,14 @@ class AircraftEnv(CAV):
         t = np.arange(0, len(data), 1) * self.delta_t  # 时间
         fig = plt.figure()
         # plt.plot(t, data[:, 3])
-        plt.plot(self.vv, self.h_up, self.vv, self.h_down)
+        # plt.plot(self.vv, self.h_up, self.vv, self.h_down)
         plt.plot(data[:, 3], data[:, 0] / 1000 - self.R0)
         plt.grid()
 
 
 if __name__ == '__main__':
     cav = AircraftEnv()
-    state_now = cav.reset()
-    state_record = state_now.copy()
-    for i in range(1500):
-        action = np.random.rand(1) * 180 - 90
-        state_now, reward, done, info = cav.step(action)
-        state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
-    # cav.plot(state_record)
-    cav.h_v(0)
 
-    state_record = cav.hv_w(1)
-    cav.plot(state_record)
+    cav.h_v()  # 进行HV走廊敏感性分析
     plt.show()
+    # TODO 保存轨迹并进行神经网络构建
