@@ -25,7 +25,14 @@ def test_memory(v):
 
 if __name__ == '__main__':
     # get_memory(3000)
-    result = test_memory(4000)
+    result = test_memory(6000)
     fig = plt.figure()
-    plt.scatter(result[:,0],result[:,2])
+    plt.scatter(result[:, 0], result[:, 2])
+    result = test_memory(5000)
+    plt.scatter(result[:, 0], result[:, 2])
+    result = test_memory(4000)
+    plt.scatter(result[:, 0], result[:, 2])
+    plt.legend(['v=6000', 'v=5000', 'v=4000'])
+    plt.xlabel('w')
+    plt.ylabel('range')
     plt.show()
