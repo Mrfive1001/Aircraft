@@ -430,9 +430,17 @@ class AircraftEnv(CAV):
                      arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
         ax.set_xlabel(r'v(m/s)')
         ax.set_ylabel(r'h(km)')
-
         ax.grid()
         plt.savefig(os.path.join('Figures', 'HV走廊敏感性分析.png'))
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        plt.plot(v, h_qegc_change/1000, v, h_down_change/1000, v, h_down1/1000, v, h_qegc1/1000)
+        ax.set_xlabel(r'v(m/s)')
+        ax.set_ylabel(r'h(km)')
+        plt.legend(['h_qegc_change', 'h_down_change', 'h_down', 'h_qegc'])
+        plt.grid()
+        plt.savefig(os.path.join('Figures', 'HV走廊有效性.png'))
 
     def step(self, action):
         # 假设倾侧角是action度 正负90度范围
@@ -463,11 +471,11 @@ class AircraftEnv(CAV):
 
 
 if __name__ == '__main__':
-    cav = AircraftEnv()
-    # cav.h_v()  # 进行HV走廊敏感性分析
     # cav = AircraftEnv()
+    # cav.h_v()  # 进行HV走廊敏感性分析和有效性分析
+    cav = AircraftEnv()
     s, info = cav.hv_w(0.8)
-    cav.plot(s)
-    plt.plot(s[:, 3], info['h_refs'] / 1000)
+    # cav.plot(s)
+    # plt.plot(s[:, 3], info['h_refs'] / 1000)
     plt.show()
     # TODO 保存轨迹并进行神经网络构建
