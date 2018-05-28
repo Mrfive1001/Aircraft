@@ -156,7 +156,7 @@ class AircraftEnv(CAV):
         self.x = None  # 内部循环状态变量
         self.state = None  # 深度强化学习中或者与外界交互变量，长度小于x
         self.t = 0
-        self.delta_t = 1  # 积分步长
+        self.delta_t = 0.5  # 积分步长
         self.random = random
 
         # 飞行器初始位置信息
@@ -229,8 +229,6 @@ class AircraftEnv(CAV):
         h_refs = []
         h_cmds = []
         # 追踪参数
-        cmd_p = 0.9
-        cmd_i = 0.2
         lambda_h = 1
         info = {}
         while True:
@@ -468,7 +466,8 @@ if __name__ == '__main__':
     cav = AircraftEnv()
     # cav.h_v()  # 进行HV走廊敏感性分析
     # cav = AircraftEnv()
-    s, info = cav.hv_w(0.5)
+    s, info = cav.hv_w(0.8)
     cav.plot(s)
+    plt.plot(s[:, 3], info['h_refs'] / 1000)
     plt.show()
     # TODO 保存轨迹并进行神经网络构建
