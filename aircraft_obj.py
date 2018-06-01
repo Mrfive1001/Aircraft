@@ -236,7 +236,7 @@ class AircraftEnv(CAV):
             h_ref = (1 - w) * v2h_down(min(v, self.v0)) + w * v2h_up(min(v, self.v0))  # m
             h = state_now[0] - self.R0 * 1000  # 高度m
             # if math.fabs(h-h_ref)<100:
-            if v < 4000:
+            if v < 5500:
                 temp = np.array([w, v, state_now[-1]])
                 if store == []:
                     store = temp.copy()
@@ -268,7 +268,7 @@ class AircraftEnv(CAV):
     def h2tht(self, h_cmd, h_cmds):
         # 利用倾侧角跟踪目标高度
         # 追踪参数
-        lambda_h = 1
+        lambda_h = 0.1
         h_cmd_dot = (h_cmd - h_cmds[-1]) / self.delta_t
         h_cmd_dot2 = ((h_cmd - h_cmds[-1]) - (h_cmds[-1] - h_cmds[-2])) / (self.delta_t) ** 2
         # 气动方面计算
@@ -492,11 +492,9 @@ if __name__ == '__main__':
     # cav = AircraftEnv()
     # cav.h_v()  # 进行HV走廊敏感性分析和有效性分析
     cav = AircraftEnv()
-    s, info = cav.hv_w(0.2)
-    cav.plot(s)
-    s, info = cav.hv_w(0.3)
-    cav.plot(s)
-    s, info = cav.hv_w(0.4)
-    cav.plot(s)
+    num = 10
+    for i in range(num+1):
+        s, info = cav.hv_w(i/num)
+        cav.plot(s)
     plt.plot(s[:, 3], info['h_refs'] / 1000)
     plt.show()

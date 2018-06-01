@@ -81,7 +81,7 @@ class DNN:
 
 if __name__ == '__main__':
     train = False  # 是否进行网络训练
-    train = True  # 是否进行网络训练
+    # train = True  # 是否进行网络训练
     net = DNN(2, 1, 256, train=train, isnorm=True)  # 定义网络
     memory = np.load('memory.npy')  # 读取数据
     memory_norm = net.norm(memory)
