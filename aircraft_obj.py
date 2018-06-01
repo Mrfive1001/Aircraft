@@ -229,10 +229,18 @@ class AircraftEnv(CAV):
         h_refs = []
         h_cmds = []
         info = {}
+        store = []
         v_init = 7000  # 初始下滑段的速度界限
         while True:
             v = self.x[3]
             h_ref = (1 - w) * v2h_down(min(v, self.v0)) + w * v2h_up(min(v, self.v0))  # m
+            h = state_now[0] - self.R0 * 1000  # 高度m
+            if math.fabs(h-h_ref)<100:
+                temp = np.array([w,v,state_now[-1]])
+                if store == []:
+                    store = temp.copy()
+                else:
+                    store = np.vstack((store,temp.copy()))
             if v > v_init:
                 tht = cons / 57.3
                 h_cmd = h_ref
@@ -243,13 +251,12 @@ class AircraftEnv(CAV):
             h_cmds.append(h_cmd)
             control.append(tht * 57.3)
             state_now, reward, done, info = self.step(tht * 57.3)
+
             state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
             if done:
                 h_refs.append(h_ref)
                 h_cmds.append(h_cmd)
                 break
-        store = ((state_record[state_record[:, 3] < v_init])[:, [0, 3, -1]]).copy()
-        store[:, 0] = w
         store[:, -1] = (np.max(store[:, -1]) - store[:, -1]) * self.R0  # 预计射程km
         info['control'] = np.array(control)
         info['h_refs'] = np.array(h_refs)
@@ -474,7 +481,7 @@ class AircraftEnv(CAV):
     def plot(self, data):
         # 画出轨迹的图，输入数据每行代表某一个时刻的状态量
         t = np.arange(0, len(data), 1) * self.delta_t  # 时间
-        fig = plt.figure()
+        # fig = plt.figure()
         plt.plot(self.vv, self.h_up / 1000, self.vv, self.h_down / 1000)
         plt.plot(data[:, 3], data[:, 0] / 1000 - self.R0)
         plt.grid()
@@ -484,8 +491,11 @@ if __name__ == '__main__':
     # cav = AircraftEnv()
     # cav.h_v()  # 进行HV走廊敏感性分析和有效性分析
     cav = AircraftEnv()
-    s, info = cav.hv_w(0.5)
+    s, info = cav.hv_w(0.2)
+    cav.plot(s)
+    s, info = cav.hv_w(0.3)
+    cav.plot(s)
+    s, info = cav.hv_w(0.4)
     cav.plot(s)
     plt.plot(s[:, 3], info['h_refs'] / 1000)
     plt.show()
-    # TODO 保存轨迹并进行神经网络构建
