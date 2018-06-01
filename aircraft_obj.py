@@ -235,12 +235,13 @@ class AircraftEnv(CAV):
             v = self.x[3]
             h_ref = (1 - w) * v2h_down(min(v, self.v0)) + w * v2h_up(min(v, self.v0))  # m
             h = state_now[0] - self.R0 * 1000  # 高度m
-            if math.fabs(h-h_ref)<100:
-                temp = np.array([w,v,state_now[-1]])
+            # if math.fabs(h-h_ref)<100:
+            if v < 4000:
+                temp = np.array([w, v, state_now[-1]])
                 if store == []:
                     store = temp.copy()
                 else:
-                    store = np.vstack((store,temp.copy()))
+                    store = np.vstack((store, temp.copy()))
             if v > v_init:
                 tht = cons / 57.3
                 h_cmd = h_ref
