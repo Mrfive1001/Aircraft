@@ -47,4 +47,4 @@ if __name__ == '__main__':
     plt.xlabel('w')
     plt.ylabel('range')
     plt.show()
-    small_memory()
+    # small_memory()
