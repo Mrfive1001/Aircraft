@@ -83,15 +83,15 @@ if __name__ == '__main__':
     train = False  # 是否进行网络训练
     # train = True  # 是否进行网络训练
     net = DNN(2, 1, 256, train=train, isnorm=True)  # 定义网络
-    memory = np.load('memory.npy')  # 读取数据
+    memory = np.load('small_memory2.npy')  # 读取数据
     memory_norm = net.norm(memory)
     if train:
         # 训练模式
         X = memory_norm[:, [0, 1]].copy()
         Y = memory_norm[:, 2:].copy()
         losses = []
-        for i in range(4000):
-            sample_index = np.random.choice(len(X), size=10000)
+        for i in range(5000):
+            sample_index = np.random.choice(len(X), size=5000)
             batch_x = X[sample_index, :]
             batch_y = Y[sample_index, :]
             loss = net.learn(batch_x, batch_y)
@@ -115,4 +115,5 @@ if __name__ == '__main__':
         batch_y_pre = net.predict(batch_x)
         print(batch_y, '\n\n')
         print(batch_y_pre - batch_y)
-        print(net.unorm(np.hstack((batch_x,batch_y-batch_y_pre))),'\n\n\n',net.unorm(np.hstack((batch_x,batch_y))))
+        print(net.unorm(np.hstack((batch_x, batch_y - batch_y_pre))), '\n\n\n',
+              net.unorm(np.hstack((batch_x, batch_y))))

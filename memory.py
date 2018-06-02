@@ -17,23 +17,34 @@ def get_memory(groups_num):
     np.save('memory.npy', memory)
 
 
-def test_memory(v):
+def glance_memory(v):
     memory = np.load('memory.npy')
     result = (memory[np.fabs(memory[:, 1] - v) < 5]).copy()
     return result
 
 
+def small_memory():
+    try:
+        memory = np.load('memory.npy')
+    except Exception:
+        get_memory(300)
+        memory = np.load('memory.npy')
+    small_memory = memory[memory[:, -1] <= 10].copy()
+    np.save('small_memory2.npy', small_memory)
+
+
 if __name__ == '__main__':
     # get_memory(300)
     vs = [3000, 2500, 2000]
-    result = test_memory(vs[0])
+    result = glance_memory(vs[0])
     fig = plt.figure()
     plt.scatter(result[:, 0], result[:, 2])
-    result = test_memory(vs[1])
+    result = glance_memory(vs[1])
     plt.scatter(result[:, 0], result[:, 2])
-    result = test_memory(vs[2])
+    result = glance_memory(vs[2])
     plt.scatter(result[:, 0], result[:, 2])
     plt.legend(['v=%d' % vs[0], 'v=%d' % vs[1], 'v=%d' % vs[2]])
     plt.xlabel('w')
     plt.ylabel('range')
     plt.show()
+    small_memory()
