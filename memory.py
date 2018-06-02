@@ -24,7 +24,7 @@ def test_memory(v):
 
 
 if __name__ == '__main__':
-    get_memory(200)
+    # get_memory(300)
     vs = [3000, 2500, 2000]
     result = test_memory(vs[0])
     fig = plt.figure()
