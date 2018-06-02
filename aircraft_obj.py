@@ -482,9 +482,12 @@ class AircraftEnv(CAV):
     def plot(self, data):
         # 画出轨迹的图，输入数据每行代表某一个时刻的状态量
         t = np.arange(0, len(data), 1) * self.delta_t  # 时间
-        # fig = plt.figure()
+        fig = plt.figure()
         plt.plot(self.vv, self.h_up / 1000, self.vv, self.h_down / 1000)
         plt.plot(data[:, 3], data[:, 0] / 1000 - self.R0)
+        plt.grid()
+        fig = plt.figure()
+        plt.plot(t, data[:, -1] * self.R0)
         plt.grid()
 
 
@@ -493,8 +496,8 @@ if __name__ == '__main__':
     # cav.h_v()  # 进行HV走廊敏感性分析和有效性分析
     cav = AircraftEnv()
     num = 10
-    for i in range(num+1):
-        s, info = cav.hv_w(i/num)
+    for i in range(num + 1):
+        s, info = cav.hv_w(i / num)
         cav.plot(s)
     plt.plot(s[:, 3], info['h_refs'] / 1000)
     plt.show()

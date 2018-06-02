@@ -79,8 +79,8 @@ if __name__ == '__main__':
     memory_norm = net.norm(memory)
     if train:
         # 训练模式
-        X = memory_norm[:, [0, 2]].copy()
-        Y = memory_norm[:, 1:2].copy()
+        X = memory_norm[:, 1:].copy()
+        Y = memory_norm[:, 0:1].copy()
         losses = []
         for i in range(4000):
             sample_index = np.random.choice(len(X), size=5000)
@@ -99,8 +99,8 @@ if __name__ == '__main__':
         net.store()
         plt.show()
     else:
-        X = memory_norm[:, [0, 2]].copy()
-        Y = memory_norm[:, 1:2].copy()
+        X = memory_norm[:, 1:].copy()
+        Y = memory_norm[:, 0:1].copy()
         sample_index = np.random.choice(len(X), size=10)
         batch_x = X[sample_index, :]
         batch_y = Y[sample_index, :]
