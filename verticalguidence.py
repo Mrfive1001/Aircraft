@@ -13,7 +13,7 @@ if __name__ == '__main__':
     g1 = tf.Graph()
     g2 = tf.Graph()
     single = 0
-    num2 = 400
+    num2 = 300
     net1 = DNN(2, 1, 256, train=0, isnorm=True, name='all', graph=g1)  # 定义网络
     net2 = DNN(2, 1, 256, train=0, isnorm=True, name=str(num2), graph=g2)  # 定义网络
     memory1 = np.load('Trajectories/memory_original.npy')  # 读取数据
@@ -25,7 +25,7 @@ if __name__ == '__main__':
     cons = 22
     v2h_down = interp1d(cav.vv, cav.h_down, kind='quadratic')
     v2h_up = interp1d(cav.vv, cav.h_up, kind='quadratic')
-    range_target = 6900
+    range_target = 6500
     v_init = 7000
     v = state_now[3]
     range_now = state_now[-1] * cav.R0
