@@ -35,10 +35,11 @@ def small_memory(limit_range):
         memory = np.load('Trajectories\memory_original.npy')
     small_memory = memory[memory[:, -1] <= limit_range].copy()  # 射程限制
     np.save('Trajectories\memory_%s.npy' % limit_range, small_memory)
+    return small_memory
 
 
 if __name__ == '__main__':
-    small_memory(300)
+    small_memory(200)
 
     # 画出某个速度下射程和w的关系
     # vs = [3000, 2500, 2000]

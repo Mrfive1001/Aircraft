@@ -3,7 +3,7 @@ import tensorflow as tf
 import os
 import sys
 import matplotlib.pyplot as plt
-
+from memory import small_memory
 
 # 定义神经网络并且获得网络结构
 class DNN:
@@ -85,16 +85,20 @@ class DNN:
 
 
 if __name__ == '__main__':
-    train_mode = 2  # 是否进行网络训练,0不训练，1从0开始训练，2从之前基础上开始训练
-    net = DNN(2, 1, 256, train=train_mode, isnorm=True, name='all')  # 定义网络
-    memory = np.load('Trajectories/memory_original.npy')  # 读取数据
+    train_mode = 1  # 是否进行网络训练,0不训练，1从0开始训练，2从之前基础上开始训练
+    num = 100
+    net = DNN(2, 1, 256, train=train_mode, isnorm=True, name=str(num))  # 定义网络
+    try:
+        memory = np.load('Trajectories/memory_%s.npy'%num)  # 读取数据
+    except Exception:
+        memory = small_memory(num)
     memory_norm = net.norm(memory)
     if train_mode == 1 or train_mode == 2:
         # 训练模式
         X = memory_norm[:, 1:].copy()
         Y = memory_norm[:, 0:1].copy()
         losses = []
-        for i in range(500):
+        for i in range(5000):
             sample_index = np.random.choice(len(X), size=5000)
             batch_x = X[sample_index, :]
             batch_y = Y[sample_index, :]
