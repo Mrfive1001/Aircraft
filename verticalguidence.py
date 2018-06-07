@@ -12,9 +12,14 @@ if __name__ == '__main__':
     cav = AircraftEnv()
     g1 = tf.Graph()
     g2 = tf.Graph()
-    net = DNN(2, 1, 256, train=0, isnorm=True, name='all',graph=g1)  # 定义网络
-    memory = np.load('Trajectories/memory_original.npy')  # 读取数据
-    memory_norm = net.norm(memory)  # 数据进行处理
+    single = 0
+    num2 = 400
+    net1 = DNN(2, 1, 256, train=0, isnorm=True, name='all', graph=g1)  # 定义网络
+    net2 = DNN(2, 1, 256, train=0, isnorm=True, name=str(num2), graph=g2)  # 定义网络
+    memory1 = np.load('Trajectories/memory_original.npy')  # 读取数据
+    memory_norm1 = net1.norm(memory1)  # 数据进行处理
+    memory2 = np.load('Trajectories/memory_%s.npy' % num2)  # 读取数据
+    memory_norm2 = net2.norm(memory2)  # 数据进行处理
     # 初始设置
     state_now = cav.reset()
     cons = 22
@@ -32,10 +37,13 @@ if __name__ == '__main__':
     # 开始测试
     while True:
         # 得到所需w
-        if range_left<200:
-            w = net.predict(net.norm([[1, v, range_left]])[:, 1:])[0]
+        if range_left < num2:
+            if single:
+                w = net1.predict(net1.norm([[1, v, range_left]])[:, 1:])[0]
+            else:
+                w = net2.predict(net2.norm([[1, v, range_left]])[:, 1:])[0]
         else:
-            w = net.predict(net.norm([[1, v, range_left]])[:, 1:])[0]
+            w = net1.predict(net1.norm([[1, v, range_left]])[:, 1:])[0]
         ws.append(w)
         # 计算目标高度
         h_cmd = (1 - w) * v2h_down(min(v, cav.v0)) + w * v2h_up(min(v, cav.v0))  # m
