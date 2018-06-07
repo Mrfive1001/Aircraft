@@ -86,6 +86,7 @@ class DNN:
 
 if __name__ == '__main__':
     train_mode = 1  # 是否进行网络训练,0不训练，1从0开始训练，2从之前基础上开始训练
+    # 原始数据是7000
     num = 400
     net = DNN(2, 1, 256, train=train_mode, isnorm=True, name=str(num))  # 定义网络
     try:

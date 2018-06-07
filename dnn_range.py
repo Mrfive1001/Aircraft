@@ -9,9 +9,9 @@ from dnn import DNN
 
 if __name__ == '__main__':
     train_mode = 1  # 是否进行网络训练,0不训练，1从0开始训练，2从之前基础上开始训练
-
-    net = DNN(2, 1, 256, train=train_mode, isnorm=True, name='range_all')  # 定义网络
-    memory = np.load('Trajectories/memory_original.npy')  # 读取数据
+    num = 7000
+    net = DNN(2, 1, 256, train=train_mode, isnorm=True, name='range_%s' % str(num))  # 定义网络
+    memory = np.load('Trajectories/memory_%s.npy' % str(num))  # 读取数据
     memory_norm = net.norm(memory)
     if train_mode == 1 or train_mode == 2:
         # 训练模式

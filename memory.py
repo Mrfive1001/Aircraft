@@ -16,12 +16,12 @@ def get_memory(groups_num):
             memory = info['store'].copy()
         print('Episode %d,You\'ve stored %d pieces of data.' % (i + 1, len(memory)))
     # memory = [w,v,range]
-    np.save('Trajectories\memory_original.npy', memory)
+    np.save('Trajectories\memory_7000.npy', memory)
 
 
 def glance_memory(v):
     # 得到某个速度下的记忆
-    memory = np.load('Trajectories\memory_original.npy')
+    memory = np.load('Trajectories\memory_7000.npy')
     result = (memory[np.fabs(memory[:, 1] - v) < 5]).copy()
     return result
 
@@ -29,10 +29,10 @@ def glance_memory(v):
 def small_memory(limit_range):
     # 将原有记忆进行处理，小于某个range值得记忆进行保存
     try:
-        memory = np.load('Trajectories\memory_original.npy')
+        memory = np.load('Trajectories\memory_7000.npy')
     except Exception:
         get_memory(300)
-        memory = np.load('Trajectories\memory_original.npy')
+        memory = np.load('Trajectories\memory_7000.npy')
     small_memory = memory[memory[:, -1] <= limit_range].copy()  # 射程限制
     np.save('Trajectories\memory_%s.npy' % limit_range, small_memory)
     return small_memory

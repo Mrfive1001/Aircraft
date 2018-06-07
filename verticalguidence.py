@@ -13,10 +13,11 @@ if __name__ == '__main__':
     g1 = tf.Graph()
     g2 = tf.Graph()
     single = 0
+    num1 = 7000
     num2 = 300
-    net1 = DNN(2, 1, 256, train=0, isnorm=True, name='all', graph=g1)  # 定义网络
+    net1 = DNN(2, 1, 256, train=0, isnorm=True, name=str(num1), graph=g1)  # 定义网络
     net2 = DNN(2, 1, 256, train=0, isnorm=True, name=str(num2), graph=g2)  # 定义网络
-    memory1 = np.load('Trajectories/memory_original.npy')  # 读取数据
+    memory1 = np.load('Trajectories/memory_%s.npy' % num1)  # 读取数据
     memory_norm1 = net1.norm(memory1)  # 数据进行处理
     memory2 = np.load('Trajectories/memory_%s.npy' % num2)  # 读取数据
     memory_norm2 = net2.norm(memory2)  # 数据进行处理
