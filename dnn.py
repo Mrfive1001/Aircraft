@@ -5,37 +5,50 @@ import sys
 import matplotlib.pyplot as plt
 
 
+# 定义神经网络并且获得网络结构
 class DNN:
-    def __init__(self, s_dim, a_dim, units, train=True, isnorm=True):
-        # 输入维度、输出维度、单元数、是否训练
+    def __init__(self, s_dim, a_dim, units, train=0, isnorm=True, name=None,graph = None):
+        # 输入维度、输出维度、单元数、是否训练、名字
         self.s_dim = s_dim
         self.a_dim = a_dim
         self.units = units
         self.train = train
+        self.name = name
         # 对数据缩放
         self.scale = None
         self.isnorm = isnorm  # 控制是否缩放
+        self.graph = graph
         # 保存网络位置
         self.model_path0 = os.path.join(sys.path[0], 'DNN_Net')
         if not os.path.exists(self.model_path0):
             os.mkdir(self.model_path0)
+        if self.name is not None:
+            self.model_path0 = os.path.join(self.model_path0, self.name)
+            if not os.path.exists(self.model_path0):
+                os.mkdir(self.model_path0)
         self.model_path = os.path.join(self.model_path0, 'data.chkp')
-        # 输入向量
-        self.s = tf.placeholder(tf.float32, [None, s_dim], name='s')
-        self.areal = tf.placeholder(tf.float32, [None, a_dim], 'areal')
-        # 网络和输出向量
-        net0 = tf.layers.dense(self.s, self.units, activation=tf.nn.relu, name='l0')
-        net1 = tf.layers.dense(net0, self.units, activation=tf.nn.relu, name='l1')
-        net2 = tf.layers.dense(net1, self.units, name='l2', activation=tf.nn.relu)
-        net3 = tf.layers.dense(net2, self.units, name='l3', activation=tf.nn.relu)
-        self.apre = tf.layers.dense(net3, self.a_dim, activation=tf.nn.tanh, name='apre')  # 输出线性
+        if self.graph is None:
+            self.graph = tf.get_default_graph()
+        with self.graph.as_default():
+            # 输入向量
+            self.s = tf.placeholder(tf.float32, [None, s_dim], name='s')
+            self.areal = tf.placeholder(tf.float32, [None, a_dim], 'areal')
+            # 网络和输出向量
+            net0 = tf.layers.dense(self.s, self.units, activation=tf.nn.relu, name='l0')
+            net1 = tf.layers.dense(net0, self.units, activation=tf.nn.relu, name='l1')
+            net2 = tf.layers.dense(net1, self.units, name='l2', activation=tf.nn.relu)
+            net3 = tf.layers.dense(net2, self.units, name='l3', activation=tf.nn.relu)
+            self.apre = tf.layers.dense(net3, self.a_dim, activation=tf.nn.tanh, name='apre')  # 输出线性
 
-        self.loss = tf.reduce_mean(tf.squared_difference(self.areal, self.apre))  # loss函数
-        self.train_op = tf.train.RMSPropOptimizer(0.001).minimize(self.loss)  # 训练函数
-        # 保存或者读取网络
-        self.sess = tf.Session()
-        self.actor_saver = tf.train.Saver()
-        if self.train:
+            self.loss = tf.reduce_mean(tf.squared_difference(self.areal, self.apre))  # loss函数
+            self.train_op = tf.train.RMSPropOptimizer(0.001).minimize(self.loss)  # 训练函数
+            # 保存或者读取网络
+            if self.graph is not None:
+                self.sess = tf.Session(graph=self.graph)
+            else:
+                self.sess = tf.Session(graph=self.graph)
+            self.actor_saver = tf.train.Saver()
+        if self.train == 1:
             self.sess.run(tf.global_variables_initializer())
         else:
             self.actor_saver.restore(self.sess, self.model_path)
@@ -72,17 +85,16 @@ class DNN:
 
 
 if __name__ == '__main__':
-    train = False  # 是否进行网络训练
-    # train = True  # 是否进行网络训练
-    net = DNN(2, 1, 256, train=train, isnorm=True)  # 定义网络
-    memory = np.load('memory.npy')  # 读取数据
+    train_mode = 2  # 是否进行网络训练,0不训练，1从0开始训练，2从之前基础上开始训练
+    net = DNN(2, 1, 256, train=train_mode, isnorm=True, name='all')  # 定义网络
+    memory = np.load('Trajectories/memory_original.npy')  # 读取数据
     memory_norm = net.norm(memory)
-    if train:
+    if train_mode == 1 or train_mode == 2:
         # 训练模式
         X = memory_norm[:, 1:].copy()
         Y = memory_norm[:, 0:1].copy()
         losses = []
-        for i in range(4000):
+        for i in range(500):
             sample_index = np.random.choice(len(X), size=5000)
             batch_x = X[sample_index, :]
             batch_y = Y[sample_index, :]
