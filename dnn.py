@@ -22,10 +22,11 @@ class DNN:
         self.model_path0 = os.path.join(sys.path[0], 'DNN_Net')
         if not os.path.exists(self.model_path0):
             os.mkdir(self.model_path0)
-        if self.name is not None:
-            self.model_path0 = os.path.join(self.model_path0, self.name)
-            if not os.path.exists(self.model_path0):
-                os.mkdir(self.model_path0)
+        if self.name is None:
+            self.name = 'temp'
+        self.model_path0 = os.path.join(self.model_path0, self.name)
+        if not os.path.exists(self.model_path0):
+            os.mkdir(self.model_path0)
         self.model_path = os.path.join(self.model_path0, 'data.chkp')
         if self.graph is None:
             self.graph = tf.get_default_graph()
