@@ -10,17 +10,17 @@ from dnn import DNN
 
 if __name__ == '__main__':
     cav = AircraftEnv()
-
-    net = DNN(2, 1, 256, train=False, isnorm=True)  # 定义网络
-    memory = np.load('memory.npy')  # 读取数据
+    g1 = tf.Graph()
+    g2 = tf.Graph()
+    net = DNN(2, 1, 256, train=0, isnorm=True, name='all',graph=g1)  # 定义网络
+    memory = np.load('Trajectories/memory_original.npy')  # 读取数据
     memory_norm = net.norm(memory)  # 数据进行处理
-
     # 初始设置
     state_now = cav.reset()
     cons = 22
     v2h_down = interp1d(cav.vv, cav.h_down, kind='quadratic')
     v2h_up = interp1d(cav.vv, cav.h_up, kind='quadratic')
-    range_target = 6500
+    range_target = 6900
     v_init = 7000
     v = state_now[3]
     range_now = state_now[-1] * cav.R0
@@ -32,7 +32,10 @@ if __name__ == '__main__':
     # 开始测试
     while True:
         # 得到所需w
-        w = net.predict(net.norm([[1, v, range_left]])[:, 1:])[0]
+        if range_left<200:
+            w = net.predict(net.norm([[1, v, range_left]])[:, 1:])[0]
+        else:
+            w = net.predict(net.norm([[1, v, range_left]])[:, 1:])[0]
         ws.append(w)
         # 计算目标高度
         h_cmd = (1 - w) * v2h_down(min(v, cav.v0)) + w * v2h_up(min(v, cav.v0))  # m
