@@ -134,7 +134,7 @@ class CAV:
         return cl, cd
 
     def phigamma2range(self, gamma0, phi0, gamma1, phi1):
-        # 给出两点的经纬度计算射程
+        # 给出两点的经纬度计算射程 射程单位km
         ad = 2 * math.cos(phi0) * math.sin((gamma1 - gamma0) / 2)
         ec = 2 * math.cos(phi1) * math.sin((gamma1 - gamma0) / 2)
         cd = 2 * math.sin((phi1 - phi0) / 2)
@@ -150,7 +150,6 @@ class AircraftEnv(CAV):
     x 表示内部飞行器所有信息
     state 外部所需要的信息
     """
-
     def __init__(self, random=False, low=True):
         CAV.__init__(self, low)
         self.x = None  # 内部循环状态变量
@@ -209,6 +208,7 @@ class AircraftEnv(CAV):
         pass
 
     def reset(self):
+        # 重置函数
         self.t = 0
         if self.random:
             pass
@@ -226,14 +226,13 @@ class AircraftEnv(CAV):
         control = [cons]
         v2h_down = interp1d(self.vv, self.h_down, kind='quadratic')
         v2h_up = interp1d(self.vv, self.h_up, kind='quadratic')
-        h_refs = []
         h_cmds = []
         info = {}
         store = []
         v_init = 7000  # 初始下滑段的速度界限
         while True:
             v = self.x[3]
-            h_ref = (1 - w) * v2h_down(min(v, self.v0)) + w * v2h_up(min(v, self.v0))  # m
+            h_cmd = (1 - w) * v2h_down(min(v, self.v0)) + w * v2h_up(min(v, self.v0))  # m
             h = state_now[0] - self.R0 * 1000  # 高度m
             # if math.fabs(h-h_ref)<100:
             if v < 5500:
@@ -244,23 +243,18 @@ class AircraftEnv(CAV):
                     store = np.vstack((store, temp.copy()))
             if v > v_init:
                 tht = cons / 57.3
-                h_cmd = h_ref
             else:
-                h_cmd = h_ref
                 tht = self.h2tht(h_cmd, h_cmds)
-            h_refs.append(h_ref)
             h_cmds.append(h_cmd)
             control.append(tht * 57.3)
             state_now, reward, done, info = self.step(tht * 57.3)
 
             state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
             if done:
-                h_refs.append(h_ref)
                 h_cmds.append(h_cmd)
                 break
         store[:, -1] = (np.max(store[:, -1]) - store[:, -1]) * self.R0  # 预计射程km
         info['control'] = np.array(control)
-        info['h_refs'] = np.array(h_refs)
         info['h_cmds'] = np.array(h_cmds)
         info['store'] = store
         return state_record.copy(), info
@@ -481,6 +475,7 @@ class AircraftEnv(CAV):
 
     def plot(self, data, hcmds=None):
         # 画出轨迹的图，输入数据每行代表某一个时刻的状态量
+        # 将规划的hv也画出来
         t = np.arange(0, len(data), 1) * self.delta_t  # 时间
         fig = plt.figure()
         plt.plot(self.vv, self.h_up / 1000, self.vv, self.h_down / 1000)
@@ -488,6 +483,7 @@ class AircraftEnv(CAV):
         if hcmds is not None:
             plt.plot(data[:, 3], np.array(hcmds)/1000)
         plt.grid()
+        # 画出射程随时间变化
         fig = plt.figure()
         plt.plot(t, data[:, -1] * self.R0)
         plt.grid()
@@ -497,9 +493,9 @@ if __name__ == '__main__':
     # cav = AircraftEnv()
     # cav.h_v()  # 进行HV走廊敏感性分析和有效性分析
     cav = AircraftEnv()
-    num = 10
+    num = 1
     for i in range(num + 1):
         s, info = cav.hv_w(i / num)
         cav.plot(s)
-    plt.plot(s[:, 3], info['h_refs'] / 1000)
+    plt.plot(s[:, 3], info['h_cmds'] / 1000)
     plt.show()
