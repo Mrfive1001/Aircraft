@@ -5,9 +5,10 @@ import sys
 import matplotlib.pyplot as plt
 from memory import small_memory
 
+
 # 定义神经网络并且获得网络结构
 class DNN:
-    def __init__(self, s_dim, a_dim, units, train=0, isnorm=True, name=None,graph = None):
+    def __init__(self, s_dim, a_dim, units, train=0, isnorm=True, name=None, graph=None):
         # 输入维度、输出维度、单元数、是否训练、名字
         self.s_dim = s_dim
         self.a_dim = a_dim
@@ -39,10 +40,11 @@ class DNN:
             net1 = tf.layers.dense(net0, self.units, activation=tf.nn.relu, name='l1')
             net2 = tf.layers.dense(net1, self.units, name='l2', activation=tf.nn.relu)
             net3 = tf.layers.dense(net2, self.units, name='l3', activation=tf.nn.relu)
-            self.apre = tf.layers.dense(net3, self.a_dim, activation=tf.nn.tanh, name='apre')  # 输出线性
+            self.apre = tf.layers.dense(net3, self.a_dim, name='apre')  # 输出线性
 
+            self.mae = tf.reduce_mean(tf.abs(self.areal - self.apre))
             self.loss = tf.reduce_mean(tf.squared_difference(self.areal, self.apre))  # loss函数
-            self.train_op = tf.train.RMSPropOptimizer(0.001).minimize(self.loss)  # 训练函数
+            self.train_op = tf.train.RMSPropOptimizer(0.0001).minimize(self.loss)  # 训练函数
             # 保存或者读取网络
             if self.graph is not None:
                 self.sess = tf.Session(graph=self.graph)
@@ -56,8 +58,8 @@ class DNN:
 
     def learn(self, X, Y):
         # 使用网络对样本进行训练
-        _, loss = self.sess.run([self.train_op, self.loss], feed_dict={self.s: X, self.areal: Y})
-        return loss
+        _, loss, mae = self.sess.run([self.train_op, self.loss, self.mae], feed_dict={self.s: X, self.areal: Y})
+        return loss, mae
 
     def store(self):
         # 存储网络
@@ -72,7 +74,7 @@ class DNN:
         if self.isnorm:
             # 进行缩放
             if self.scale is None:
-                self.scale = np.fabs(data).max(axis=0)
+                self.scale = np.fabs(data).max(axis=0) / 10
             return data / self.scale
         else:
             return data
@@ -91,7 +93,7 @@ if __name__ == '__main__':
     num = 400
     net = DNN(2, 1, 256, train=train_mode, isnorm=True, name=str(num))  # 定义网络
     try:
-        memory = np.load('Trajectories/memory_%s.npy'%num)  # 读取数据
+        memory = np.load('Trajectories/memory_%s.npy' % num)  # 读取数据
     except Exception:
         memory = small_memory(num)
     memory_norm = net.norm(memory)
