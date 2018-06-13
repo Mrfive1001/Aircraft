@@ -8,7 +8,7 @@ from memory import small_memory
 
 # 定义神经网络并且获得网络结构
 class DNN:
-    def __init__(self, s_dim, a_dim, units, train=0, isnorm=True, name=None, graph=None):
+    def __init__(self, s_dim, a_dim, units, train=0, isnorm=True, name=None, graph=None, scale=None):
         # 输入维度、输出维度、单元数、是否训练、名字
         self.s_dim = s_dim
         self.a_dim = a_dim
@@ -16,7 +16,7 @@ class DNN:
         self.train = train
         self.name = name
         # 对数据缩放
-        self.scale = None
+        self.scale = scale
         self.isnorm = isnorm  # 控制是否缩放
         self.graph = graph
         # 保存网络位置
@@ -80,6 +80,8 @@ class DNN:
             if self.scale is None:
                 # w v range
                 self.scale = np.array([0.01, 100, 100])
+            else:
+                self.scale = np.array(self.scale)
             return data / self.scale
         else:
             return data
