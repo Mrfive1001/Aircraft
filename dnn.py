@@ -33,18 +33,22 @@ class DNN:
             self.graph = tf.get_default_graph()
         with self.graph.as_default():
             # 输入向量
+            my_actiivation = tf.nn.tanh
             self.s = tf.placeholder(tf.float32, [None, s_dim], name='s')
             self.areal = tf.placeholder(tf.float32, [None, a_dim], 'areal')
             # 网络和输出向量
-            net0 = tf.layers.dense(self.s, self.units, activation=tf.nn.relu, name='l0')
-            net1 = tf.layers.dense(net0, self.units, activation=tf.nn.relu, name='l1')
-            net2 = tf.layers.dense(net1, self.units, name='l2', activation=tf.nn.relu)
-            net3 = tf.layers.dense(net2, self.units, name='l3', activation=tf.nn.relu)
-            self.apre = tf.layers.dense(net3, self.a_dim, name='apre')  # 输出线性
+            net0 = tf.layers.dense(self.s, self.units, activation=my_actiivation, name='l0')
+            net1 = tf.layers.dense(net0, self.units, activation=my_actiivation, name='l1')
+            net2 = tf.layers.dense(net1, self.units, name='l2', activation=my_actiivation)
+            net3 = tf.layers.dense(net2, self.units, name='l3', activation=my_actiivation)
+            net4 = tf.layers.dense(net3, self.units, name='l4', activation=my_actiivation)
+            net5 = tf.layers.dense(net4, self.units, name='l5', activation=my_actiivation)
+
+            self.apre = tf.layers.dense(net5, self.a_dim, name='apre')  # 输出线性
 
             self.mae = tf.reduce_mean(tf.abs(self.areal - self.apre))
             self.loss = tf.reduce_mean(tf.squared_difference(self.areal, self.apre))  # loss函数
-            self.train_op = tf.train.RMSPropOptimizer(0.0001).minimize(self.loss)  # 训练函数
+            self.train_op = tf.train.AdamOptimizer(0.0001).minimize(self.loss)  # 训练函数
             # 保存或者读取网络
             if self.graph is not None:
                 self.sess = tf.Session(graph=self.graph)
@@ -74,7 +78,8 @@ class DNN:
         if self.isnorm:
             # 进行缩放
             if self.scale is None:
-                self.scale = np.fabs(data).max(axis=0) / 10
+                # w v range
+                self.scale = np.array([0.01, 100, 100])
             return data / self.scale
         else:
             return data
@@ -88,6 +93,7 @@ class DNN:
 
 
 if __name__ == '__main__':
+    # 预测w
     train_mode = 1  # 是否进行网络训练,0不训练，1从0开始训练，2从之前基础上开始训练
     # 原始数据是7000
     num = 400

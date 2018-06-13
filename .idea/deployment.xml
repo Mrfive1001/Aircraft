@@ -2,17 +2,10 @@
 <project version="4">
   <component name="PublishConfigData" autoUpload="Always" serverName="zhou" createEmptyFolders="true" exclude=".svn;.cvs;.hg;.git">
     <serverData>
-      <paths name="d632">
-        <serverdata>
-          <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
       <paths name="zhou">
         <serverdata>
           <mappings>
-            <mapping deploy="/Aircraft" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/home/chengyangzhou/Code/Aircraft" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
