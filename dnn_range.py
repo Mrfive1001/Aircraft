@@ -8,7 +8,7 @@ from dnn import DNN
 # 对射程进行预测
 
 if __name__ == '__main__':
-    train_mode = 1  # 是否进行网络训练,0不训练，1从0开始训练，2从之前基础上开始训练
+    train_mode = 0  # 是否进行网络训练,0不训练，1从0开始训练，2从之前基础上开始训练
     num = 7000  # 使用所有点进行训练
     net = DNN(2, 1, 256, train=train_mode, isnorm=True, name='range_%s' % str(num))  # 定义网络
     memory = np.load('Trajectories/memory_%s.npy' % str(num))  # 读取数据
@@ -18,7 +18,7 @@ if __name__ == '__main__':
         X = memory_norm[:, [0, 1]].copy()
         Y = memory_norm[:, 2:].copy()
         losses = []
-        for i in range(20000):
+        for i in range(40000):
             sample_index = np.random.choice(len(X), size=500)
             batch_x = X[sample_index, :]
             batch_y = Y[sample_index, :]
@@ -44,5 +44,6 @@ if __name__ == '__main__':
         batch_y_pre = net.predict(batch_x)
         for i in range(tes_num):
             print("第%d个数据，w = %f,v = %f,range_real = %f,range_pre = %f,delta_range = %f" % (
-            i + 1, batch_x[i, 0] * 0.01, batch_x[i, 1] * 100, batch_y[i, 0] * 100, batch_y_pre[i, 0] * 100,
-            (batch_y[i, 0] - batch_y_pre[i, 0]) * 100))
+                i + 1, batch_x[i, 0] * 0.01, batch_x[i, 1] * 100, batch_y[i, 0] * 100, batch_y_pre[i, 0] * 100,
+                (batch_y[i, 0] - batch_y_pre[i, 0]) * 100))
+        print('射程预测平均误差是', np.mean(batch_y - batch_y_pre) * 100, 'km')
