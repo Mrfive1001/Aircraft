@@ -34,46 +34,49 @@ if __name__ == '__main__':
         plt.show()
     else:
         # 测试模式
-        cav = AircraftEnv()
-        # 初始设置
-        state_now = cav.reset()
-        cons = 22
-        v2h_down = interp1d(cav.vv, cav.h_down, kind='quadratic')
-        v2h_up = interp1d(cav.vv, cav.h_up, kind='quadratic')
-        range_target = 5000
-        v_init = 7000
-        v = state_now[3]
-        range_now = state_now[-1] * cav.R0
-        range_left = range_target - range_now
-        state_record = state_now.copy()
-        ws = []
-        h_cmds = []
-        thts = []
-        # 开始测试
-        while True:
-            # 得到所需w
-            if v > v_init:
-                tht = cons / 57.3
-                w = 1
-                h_cmd = (1 - w) * v2h_down(min(v, cav.v0)) + w * v2h_up(min(v, cav.v0))  # m
-            else:
-                # 对高度进行跟踪
-                w = net.predict(net.norm([[1, v, range_left]])[:, 1:])[0] / 10
-                # 计算目标高度
-                h_cmd = (1 - w) * v2h_down(min(v, cav.v0)) + w * v2h_up(min(v, cav.v0))  # m
-                tht = cav.h2tht(h_cmd, h_cmds)
-            ws.append(w)
-            h_cmds.append(h_cmd)
-            thts.append(tht)
-            state_now, reward, done, info = cav.step(tht * 57.3)
-            # 计算当前据目标射程
+        range_targets = [6000,4000,5000,7000]
+        for i in range(len(range_targets)):
+            range_target = range_targets[i]
+            cav = AircraftEnv()
+            # 初始设置
+            state_now = cav.reset()
+            cons = 22
+            v2h_down = interp1d(cav.vv, cav.h_down, kind='quadratic')
+            v2h_up = interp1d(cav.vv, cav.h_up, kind='quadratic')
+            # range_target = 5000
+            v_init = 7000
             v = state_now[3]
             range_now = state_now[-1] * cav.R0
             range_left = range_target - range_now
-            state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
-            if done:
-                h_cmds.append(h_cmds[-1])
-                break
-        print(range_left)
-        cav.plot(state_record, h_cmds)
+            state_record = state_now.copy()
+            ws = []
+            h_cmds = []
+            thts = []
+            # 开始测试
+            while True:
+                # 得到所需w
+                if v > v_init:
+                    tht = cons / 57.3
+                    w = 1
+                    h_cmd = (1 - w) * v2h_down(min(v, cav.v0)) + w * v2h_up(min(v, cav.v0))  # m
+                else:
+                    # 对高度进行跟踪
+                    w = net.predict(net.norm([[1, v, range_left]])[:, 1:])[0] / 10
+                    # 计算目标高度
+                    h_cmd = (1 - w) * v2h_down(min(v, cav.v0)) + w * v2h_up(min(v, cav.v0))  # m
+                    tht = cav.h2tht(h_cmd, h_cmds)
+                ws.append(w)
+                h_cmds.append(h_cmd)
+                thts.append(tht)
+                state_now, reward, done, info = cav.step(tht * 57.3)
+                # 计算当前据目标射程
+                v = state_now[3]
+                range_now = state_now[-1] * cav.R0
+                range_left = range_target - range_now
+                state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
+                if done:
+                    h_cmds.append(h_cmds[-1])
+                    break
+            print(range_left)
+            cav.plot(state_record, h_cmds)
         plt.show()
