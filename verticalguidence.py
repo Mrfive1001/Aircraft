@@ -34,7 +34,7 @@ if __name__ == '__main__':
         plt.show()
     else:
         # 测试模式
-        range_targets = [6000,4000,5000,7000]
+        range_targets = [6000, 4000, 5000, 7000]
         for i in range(len(range_targets)):
             range_target = range_targets[i]
             cav = AircraftEnv()
@@ -50,6 +50,7 @@ if __name__ == '__main__':
             range_left = range_target - range_now
             state_record = state_now.copy()
             ws = []
+            wuses = []
             h_cmds = []
             thts = []
             # 开始测试
@@ -58,14 +59,22 @@ if __name__ == '__main__':
                 if v > v_init:
                     tht = cons / 57.3
                     w = 1
-                    h_cmd = (1 - w) * v2h_down(min(v, cav.v0)) + w * v2h_up(min(v, cav.v0))  # m
+                    w_use = w
+                    h_cmd = (1 - w_use) * v2h_down(min(v, cav.v0)) + w_use * v2h_up(min(v, cav.v0))  # m
                 else:
                     # 对高度进行跟踪
                     w = net.predict(net.norm([[1, v, range_left]])[:, 1:])[0] / 10
+                    w = min(1, w)
                     # 计算目标高度
-                    h_cmd = (1 - w) * v2h_down(min(v, cav.v0)) + w * v2h_up(min(v, cav.v0))  # m
+                    if ws:
+                        alpha = 0.9
+                        w_use = alpha * w + (1 - alpha) * ws[-1]
+                    else:
+                        w_use = w
+                    h_cmd = (1 - w_use) * v2h_down(min(v, cav.v0)) + w_use * v2h_up(min(v, cav.v0))  # m
                     tht = cav.h2tht(h_cmd, h_cmds)
                 ws.append(w)
+                wuses.append(w_use)
                 h_cmds.append(h_cmd)
                 thts.append(tht)
                 state_now, reward, done, info = cav.step(tht * 57.3)
@@ -79,4 +88,8 @@ if __name__ == '__main__':
                     break
             print(range_left)
             cav.plot(state_record, h_cmds)
+        plt.figure()
+        plt.plot(ws)
+        plt.plot(wuses)
+        plt.ylim([0, 1.5])
         plt.show()
