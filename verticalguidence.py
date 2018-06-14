@@ -40,7 +40,7 @@ if __name__ == '__main__':
         cons = 22
         v2h_down = interp1d(cav.vv, cav.h_down, kind='quadratic')
         v2h_up = interp1d(cav.vv, cav.h_up, kind='quadratic')
-        range_target = 8000
+        range_target = 5000
         v_init = 7000
         v = state_now[3]
         range_now = state_now[-1] * cav.R0
@@ -76,5 +76,4 @@ if __name__ == '__main__':
                 break
         print(range_left)
         cav.plot(state_record, h_cmds)
-        plt.figure()
         plt.show()
