@@ -10,7 +10,7 @@ from dnn import DNN
 
 
 # 对w进行预测并且使用跟踪
-def guidance(cav, net, range_target=None, tht_direction=None):
+def guidance(cav, net, tht_direction=None,range_target = None):
     """
     :param cav: 飞行器对象
     :param net: 网络对象
@@ -33,9 +33,10 @@ def guidance(cav, net, range_target=None, tht_direction=None):
     wuses = []
     h_cmds = []
     thts = []
-    count = 0
-    direction_last = 400
-    direction = 1
+    direction_last = 600
+    count = direction_last
+    direction = np.random.randint(0, 2) * 2 - 1
+    print(direction)
     # 开始测试
     while True:
         # 得到所需w
@@ -57,8 +58,9 @@ def guidance(cav, net, range_target=None, tht_direction=None):
             h_cmd = (1 - w_use) * v2h_down(min(v, cav.v0)) + w_use * v2h_up(min(v, cav.v0))  # m
             tht = cav.h2tht(h_cmd, h_cmds)
         if tht_direction == 'random':
-            if np.random.rand() <= 0.5 and count <= 0:
-                direction = -direction
+            if count <= 0:
+                direction = np.random.randint(0, 2) * 2 - 1
+                direction_last = direction_last
                 count = direction_last
             count = count - 1
             tht = tht * direction
@@ -106,12 +108,9 @@ if __name__ == '__main__':
         plt.show()
     else:
         # 测试模式
-        range_targets = [6000, 4000, 5000, 7000]
-        for i in range(len(range_targets)):
-            range_target = range_targets[i]
-            cav = AircraftEnv()
-            info = guidance(cav, net, range_target)
-            print(info['range_error'])
-            state_record, h_cmds = info['state_records'], info['hcmd_records']
-            cav.plot(state_record, h_cmds)
+        cav = AircraftEnv()
+        info = guidance(cav, net)
+        print(info['range_error'])
+        state_record, h_cmds = info['state_records'], info['hcmd_records']
+        cav.plot(state_record, h_cmds)
         plt.show()
