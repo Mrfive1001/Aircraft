@@ -8,8 +8,9 @@ from scipy.optimize import root
 from scipy.interpolate import interp1d
 from dnn import DNN
 
+
 # 对w进行预测并且使用跟踪
-def guidance(cav,net,range_target=None):
+def guidance(cav, net, range_target=None, tht='random'):
     """
     :param cav: 飞行器对象
     :param net: 网络对象
@@ -52,6 +53,11 @@ def guidance(cav,net,range_target=None):
                 w_use = w
             h_cmd = (1 - w_use) * v2h_down(min(v, cav.v0)) + w_use * v2h_up(min(v, cav.v0))  # m
             tht = cav.h2tht(h_cmd, h_cmds)
+        if tht == 'random':
+            if np.random.rand() <= 0.5:
+                tht = -tht
+        elif tht == 'neg':
+            tht = -tht
         ws.append(w)
         wuses.append(w_use)
         h_cmds.append(h_cmd)
@@ -65,9 +71,10 @@ def guidance(cav,net,range_target=None):
         if done:
             h_cmds.append(h_cmds[-1])
             break
-    info = {'state_records': state_record,'w_records':np.array(ws),'hcmd_records':np.array(h_cmds),
-            'tht_records':np.array(thts),'range_error':range_left}
+    info = {'state_records': state_record, 'w_records': np.array(ws), 'hcmd_records': np.array(h_cmds),
+            'tht_records': np.array(thts), 'range_error': range_left}
     return info
+
 
 if __name__ == '__main__':
     train_mode = 0  # 是否进行网络训练,0不训练，1从0开始训练，2从之前基础上开始训练
@@ -97,8 +104,8 @@ if __name__ == '__main__':
         for i in range(len(range_targets)):
             range_target = range_targets[i]
             cav = AircraftEnv()
-            info = guidance(cav,net,range_target)
+            info = guidance(cav, net, range_target)
             print(info['range_error'])
-            state_record,h_cmds = info['state_records'],info['hcmd_records']
+            state_record, h_cmds = info['state_records'], info['hcmd_records']
             cav.plot(state_record, h_cmds)
         plt.show()

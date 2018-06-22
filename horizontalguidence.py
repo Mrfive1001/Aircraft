@@ -6,6 +6,7 @@ from dnn import DNN
 from verticalguidence import guidance
 from scipy.optimize import root
 from scipy.interpolate import interp1d
+import math
 
 # 横纵向弹道 横向确定方向，纵向确定大小
 if __name__ == '__main__':
@@ -18,4 +19,13 @@ if __name__ == '__main__':
     info = guidance(cav, net)
     states, ws, hcmds, thts = info['state_records'], info['w_records'], info['hcmd_records'], info['tht_records']
     # 对结果画图
-
+    # HV走廊
+    fig1 = plt.figure()
+    cav.plot(states, hcmds)
+    # 经纬度图
+    fig2 = plt.figure()
+    rate = 180 / math.pi
+    plt.plot(states[:, 1] * rate, states[:, 2] * rate)
+    plt.scatter([cav.gama0 * rate, cav.gamaf * rate], [cav.phi0 * rate, cav.phif * rate], marker='*', c='r')
+    plt.grid()
+    plt.show()
