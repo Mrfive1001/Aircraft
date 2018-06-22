@@ -34,6 +34,7 @@ def guidance(cav, net, range_target=None, tht_direction=None):
     h_cmds = []
     thts = []
     count = 0
+    direction_last = 400
     direction = 1
     # 开始测试
     while True:
@@ -56,9 +57,9 @@ def guidance(cav, net, range_target=None, tht_direction=None):
             h_cmd = (1 - w_use) * v2h_down(min(v, cav.v0)) + w_use * v2h_up(min(v, cav.v0))  # m
             tht = cav.h2tht(h_cmd, h_cmds)
         if tht_direction == 'random':
-            if np.random.rand() <= 0.5 and count == 0:
+            if np.random.rand() <= 0.5 and count <= 0:
                 direction = -direction
-                count = 50
+                count = direction_last
             count = count - 1
             tht = tht * direction
         elif tht_direction == 'neg':
