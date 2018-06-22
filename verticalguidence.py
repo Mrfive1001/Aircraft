@@ -65,8 +65,8 @@ def guidance(cav,net,range_target=None):
         if done:
             h_cmds.append(h_cmds[-1])
             break
-    info = {'state_records': state_record,'w_records':ws,'hcmd_records':h_cmds,
-            'tht_records':tht,'range_error':range_left}
+    info = {'state_records': state_record,'w_records':np.array(ws),'hcmd_records':np.array(h_cmds),
+            'tht_records':np.array(thts),'range_error':range_left}
     return info
 
 if __name__ == '__main__':
