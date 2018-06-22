@@ -10,7 +10,7 @@ from dnn import DNN
 
 
 # 对w进行预测并且使用跟踪
-def guidance(cav, net, range_target=None, tht='random'):
+def guidance(cav, net, range_target=None, tht_direction=None):
     """
     :param cav: 飞行器对象
     :param net: 网络对象
@@ -53,10 +53,10 @@ def guidance(cav, net, range_target=None, tht='random'):
                 w_use = w
             h_cmd = (1 - w_use) * v2h_down(min(v, cav.v0)) + w_use * v2h_up(min(v, cav.v0))  # m
             tht = cav.h2tht(h_cmd, h_cmds)
-        if tht == 'random':
+        if tht_direction == 'random':
             if np.random.rand() <= 0.5:
                 tht = -tht
-        elif tht == 'neg':
+        elif tht_direction == 'neg':
             tht = -tht
         ws.append(w)
         wuses.append(w_use)

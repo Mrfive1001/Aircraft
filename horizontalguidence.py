@@ -14,18 +14,24 @@ if __name__ == '__main__':
     num = 7000
     net = DNN(2, 1, 512, train=0, isnorm=True, name='w_%s' % str(num), scale=[0.1, 100, 100])  # 定义网络
     # 定义训练对象
-    cav = AircraftEnv()
-    # 进行飞行
-    info = guidance(cav, net)
-    states, ws, hcmds, thts = info['state_records'], info['w_records'], info['hcmd_records'], info['tht_records']
-    # 对结果画图
-    # HV走廊
-    fig1 = plt.figure()
-    cav.plot(states, hcmds)
-    # 经纬度图
-    fig2 = plt.figure()
-    rate = 180 / math.pi
-    plt.plot(states[:, 1] * rate, states[:, 2] * rate)
-    plt.scatter([cav.gama0 * rate, cav.gamaf * rate], [cav.phi0 * rate, cav.phif * rate], marker='*', c='r')
-    plt.grid()
+    for i in range(0,10):
+        cav = AircraftEnv()
+        # 进行飞行
+        if i == 0:
+            info = guidance(cav, net)
+        elif i == 1:
+            info = guidance(cav, net, tht_direction='neg')
+        else:
+            info = guidance(cav, net, tht_direction='random')
+        states, ws, hcmds, thts = info['state_records'], info['w_records'], info['hcmd_records'], info['tht_records']
+        # 对结果画图
+        # HV走廊
+        # fig1 = plt.figure()
+        # cav.plot(states, hcmds)
+        # # 经纬度图
+        # fig2 = plt.figure()
+        rate = 180 / math.pi
+        plt.plot(states[:, 1] * rate, states[:, 2] * rate)
+        plt.scatter([cav.gama0 * rate, cav.gamaf * rate], [cav.phi0 * rate, cav.phif * rate], marker='*', c='r')
+        plt.grid()
     plt.show()
