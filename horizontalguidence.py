@@ -14,7 +14,7 @@ if __name__ == '__main__':
     num = 7000
     net = DNN(2, 1, 512, train=0, isnorm=True, name='w_%s' % str(num), scale=[0.1, 100, 100])  # 定义网络
     # 定义训练对象
-    for i in range(0,3):
+    for i in range(0,30):
         cav = AircraftEnv()
         # 进行飞行
         if i == 0:
