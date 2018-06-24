@@ -58,6 +58,8 @@ def guidance(cav, net, tht_direction=None, range_target=None):
                 w_use = w
             h_cmd = (1 - w_use) * v2h_down(min(v, cav.v0)) + w_use * v2h_up(min(v, cav.v0))  # m
             tht = cav.h2tht(h_cmd, h_cmds)
+        angle = cav.calculate_angle() / math.pi * 180
+        angles.append(angle)
         if tht_direction == 'random':
             if count <= 0:
                 direction = np.random.randint(0, 2) * 2 - 1
@@ -68,9 +70,10 @@ def guidance(cav, net, tht_direction=None, range_target=None):
         elif tht_direction == 'neg':
             tht = -tht
         elif tht_direction == 'simple':
-            pass
-        angle = cav.calculate_angle() / math.pi * 180
-        angles.append(angle)
+            if angle > 0:
+                tht = tht
+            else:
+                tht = -tht
         ws.append(w)
         wuses.append(w_use)
         h_cmds.append(h_cmd)

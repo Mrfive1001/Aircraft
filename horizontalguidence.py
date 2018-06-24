@@ -23,7 +23,7 @@ if __name__ == '__main__':
     #     info = guidance(cav, net, tht_direction='neg')
     # else:
     #     info = guidance(cav, net, tht_direction='random')
-    info = guidance(cav,net,tht_direction='random')
+    info = guidance(cav,net,tht_direction='simple')
     states, ws, hcmds, thts = info['state_records'], info['w_records'], info['hcmd_records'], info['tht_records']
     rate = 180 / math.pi
     plt.figure()
