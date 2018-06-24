@@ -17,13 +17,7 @@ if __name__ == '__main__':
     # 定义训练对象
     cav = AircraftEnv()
     # 进行飞行
-    # if i == 0:
-    #     info = guidance(cav, net)
-    # elif i == 1:
-    #     info = guidance(cav, net, tht_direction='neg')
-    # else:
-    #     info = guidance(cav, net, tht_direction='random')
-    info = guidance(cav,net,tht_direction='simple')
+    info = guidance(cav,net,tht_direction='strategy')
     states, ws, hcmds, thts = info['state_records'], info['w_records'], info['hcmd_records'], info['tht_records']
     rate = 180 / math.pi
     plt.figure()
