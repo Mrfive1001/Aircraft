@@ -192,7 +192,7 @@ class AircraftEnv(CAV):
         self.gamaf = 225 / 180 * math.pi  # 弧度
         self.phif = 25 / 180 * math.pi  # 弧度
         self.rangef = self.phigamma2range(self.gama0, self.phi0, self.gamaf, self.phif)  # 射程km 与 range*self.R0差不多
-
+        self.anglef = self.phigamma2angle(self.gama0, self.phi0, self.gamaf, self.phif)
         # 约束条件
         self.Q_dot_max_allow = 1200  # Kw/m2
         self.n_max_allow = 4  # g0
@@ -491,7 +491,8 @@ class AircraftEnv(CAV):
         return self.phigamma2range(self.state[1], self.state[2], self.gamaf, self.phif)
 
     def calculate_angle(self):
-        return self.phigamma2angle(self.state[1], self.state[2], self.gamaf, self.phif)
+        # 视线角差
+        return self.phigamma2angle(self.state[1], self.state[2], self.gamaf, self.phif) - self.state[-2]
 
     def plot(self, data, hcmds=None):
         # 画出轨迹的图，输入数据每行代表某一个时刻的状态量
