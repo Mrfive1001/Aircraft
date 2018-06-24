@@ -82,7 +82,8 @@ def guidance(cav, net, tht_direction=None, range_target=None):
         # 计算当前据目标射程
         v = state_now[3]
         range_now = state_now[-1] * cav.R0
-        range_left = range_target - range_now
+        # range_left = range_target - range_now
+        range_left = cav.calculate_range()
         state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
         if done:
             h_cmds.append(h_cmds[-1])
