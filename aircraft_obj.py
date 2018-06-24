@@ -144,7 +144,7 @@ class CAV:
 
     def phigamma2angle(self, gamma0, phi0, gamma1, phi1):
         # 当前位置与目标的视线角
-        # 输入弧度，输出弧度
+        # 输入弧度，输出弧度，表示和目标连线与正北方向的夹角
         angle = math.atan(math.sin(gamma1 - gamma0) / (math.cos(phi0) * math.tan(phi1) -
                                                        math.sin(phi0) * math.cos(gamma1 - gamma0)))
         angle = angle * (180 / math.pi)
