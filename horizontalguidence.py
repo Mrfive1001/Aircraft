@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -14,7 +15,7 @@ if __name__ == '__main__':
     num = 7000
     net = DNN(2, 1, 512, train=0, isnorm=True, name='w_%s' % str(num), scale=[0.1, 100, 100])  # 定义网络
     # 定义训练对象
-    for i in range(0,30):
+    for i in range(0,100):
         cav = AircraftEnv()
         # 进行飞行
         if i == 0:
@@ -32,7 +33,10 @@ if __name__ == '__main__':
         # fig2 = plt.figure()
         rate = 180 / math.pi
         plt.plot(states[:, 1] * rate, states[:, 2] * rate)
-        plt.scatter([cav.gama0 * rate, cav.gamaf * rate], [cav.phi0 * rate, cav.phif * rate], marker='*', c='r')
-        print(info['range_error'])
+        print(i,info['range_error'])
+    # plt.scatter([cav.gama0 * rate, cav.gamaf * rate], [cav.phi0 * rate, cav.phif * rate], marker='*', c='r')
     plt.grid()
+    plt.xlabel('Longitude/$^\circ$')
+    plt.xlabel('Latitude/$^\circ$')
+    plt.savefig(os.path.join('Figures','随机选择方向经纬度示意图.png'))
     plt.show()

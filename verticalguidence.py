@@ -36,7 +36,6 @@ def guidance(cav, net, tht_direction=None,range_target = None):
     direction_last = 600
     count = direction_last
     direction = np.random.randint(0, 2) * 2 - 1
-    print(direction)
     # 开始测试
     while True:
         # 得到所需w
