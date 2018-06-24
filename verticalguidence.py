@@ -10,7 +10,7 @@ from dnn import DNN
 
 
 # 对w进行预测并且使用跟踪
-def guidance(cav, net, tht_direction=None,range_target = None):
+def guidance(cav, net, tht_direction=None, range_target=None):
     """
     :param cav: 飞行器对象
     :param net: 网络对象
@@ -79,7 +79,7 @@ def guidance(cav, net, tht_direction=None,range_target = None):
             h_cmds.append(h_cmds[-1])
             break
     info = {'state_records': state_record, 'w_records': np.array(ws), 'hcmd_records': np.array(h_cmds),
-            'tht_records': np.array(thts), 'range_error': range_left}
+            'tht_records': np.array(thts), 'range_error': range_left, 'target_error': cav.calculate_range()}
     return info
 
 

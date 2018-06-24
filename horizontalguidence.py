@@ -25,16 +25,10 @@ if __name__ == '__main__':
         else:
             info = guidance(cav, net, tht_direction='random')
         states, ws, hcmds, thts = info['state_records'], info['w_records'], info['hcmd_records'], info['tht_records']
-        # 对结果画图
-        # HV走廊
-        # fig1 = plt.figure()
-        # cav.plot(states, hcmds)
-        # # 经纬度图
-        # fig2 = plt.figure()
         rate = 180 / math.pi
         plt.plot(states[:, 1] * rate, states[:, 2] * rate)
-        print(i,info['range_error'])
-    # plt.scatter([cav.gama0 * rate, cav.gamaf * rate], [cav.phi0 * rate, cav.phif * rate], marker='*', c='r')
+        print(i,info['target_error'])
+    plt.plot([cav.gama0 * rate, cav.gamaf * rate], [cav.phi0 * rate, cav.phif * rate], marker='*', c='r')
     plt.grid()
     plt.xlabel('Longitude/$^\circ$')
     plt.xlabel('Latitude/$^\circ$')

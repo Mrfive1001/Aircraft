@@ -150,6 +150,7 @@ class AircraftEnv(CAV):
     x 表示内部飞行器所有信息
     state 外部所需要的信息
     """
+
     def __init__(self, random=False, low=True):
         CAV.__init__(self, low)
         self.x = None  # 内部循环状态变量
@@ -473,6 +474,9 @@ class AircraftEnv(CAV):
         info = info.copy()
         return self.state, reward, done, info
 
+    def calculate_range(self):
+        return self.phigamma2range(self.state[1], self.state[2], self.gamaf, self.phif)
+
     def plot(self, data, hcmds=None):
         # 画出轨迹的图，输入数据每行代表某一个时刻的状态量
         # 将规划的hv也画出来
@@ -481,7 +485,7 @@ class AircraftEnv(CAV):
         plt.plot(self.vv, self.h_up / 1000, self.vv, self.h_down / 1000)
         plt.plot(data[:, 3], data[:, 0] / 1000 - self.R0)
         if hcmds is not None:
-            plt.plot(data[:, 3], np.array(hcmds)/1000)
+            plt.plot(data[:, 3], np.array(hcmds) / 1000)
         plt.grid()
         # 画出射程随时间变化
         # fig = plt.figure()
