@@ -142,6 +142,19 @@ class CAV:
         range = 2 * math.asin(ac / 2) * self.R0
         return range
 
+    def phigamma2angle(self, gamma0, phi0, gamma1, phi1):
+        # 当前位置与目标的视线角
+        # 输入弧度，输出弧度
+        angle = math.atan(math.sin(gamma1 - gamma0) / (math.cos(phi0) * math.tan(phi1) -
+                                                       math.sin(phi0) * math.cos(gamma1 - gamma0)))
+        angle = angle * (180 / math.pi)
+        if angle < 0 and gamma1 > gamma0:
+            angle = angle + 180
+        if angle > 0 and gamma1 < gamma0:
+            angle = angle - 180
+        angle = angle / (180 / math.pi)
+        return angle
+
 
 class AircraftEnv(CAV):
     """
@@ -476,6 +489,9 @@ class AircraftEnv(CAV):
 
     def calculate_range(self):
         return self.phigamma2range(self.state[1], self.state[2], self.gamaf, self.phif)
+
+    def calculate_angle(self):
+        return self.phigamma2angle(self.state[1], self.state[2], self.gamaf, self.phif)
 
     def plot(self, data, hcmds=None):
         # 画出轨迹的图，输入数据每行代表某一个时刻的状态量
