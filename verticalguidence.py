@@ -79,10 +79,10 @@ def guidance(cav, net, tht_direction=None, range_target=None):
         elif tht_direction == 'strategy':
             if v > 6000:
                 limit = 10
-            elif v > 2500:
+            elif v > 3500:
                 limit = 20
             else:
-                limit = max(0,(v-1800)*(20-2)/(2500-1800)+2)
+                limit = max(0,(v-1800)*(20-2)/(3500-1800)+2)
             if abs(angle) > limit:
                 if angle > 0:
                     direction = 1
