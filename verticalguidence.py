@@ -60,6 +60,8 @@ def guidance(cav, net, tht_direction=None, range_target=None):
             tht = cav.h2tht(h_cmd, h_cmds)
         angle = cav.calculate_angle() / math.pi * 180
         angles.append(angle)
+        # 横向制导
+        # TODO 横向制导新方案
         if tht_direction == 'random':
             if count <= 0:
                 direction = np.random.randint(0, 2) * 2 - 1
@@ -80,9 +82,9 @@ def guidance(cav, net, tht_direction=None, range_target=None):
             if v > 6000:
                 limit = 10
             elif v > 3500:
-                limit = 20
+                limit = 10
             else:
-                limit = max(0,(v-1800)*(20-2)/(3500-1800)+2)
+                limit = max(0,(v-1800)*(10-2)/(3500-1800)+2)
             if abs(angle) > limit:
                 if angle > 0:
                     direction = 1
