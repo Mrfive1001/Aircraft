@@ -18,8 +18,9 @@ if __name__ == '__main__':
     cav = AircraftEnv()
     # 进行飞行
     info = guidance(cav,net,tht_direction='strategy')
-    # TODO 画图
     states, ws, hcmds, thts = info['state_records'], info['w_records'], info['hcmd_records'], info['tht_records']
+
+    # 纵向制导画图
     rate = 180 / math.pi
     plt.figure()
     plt.plot(states[:, 1] * rate, states[:, 2] * rate)
