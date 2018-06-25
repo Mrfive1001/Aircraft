@@ -164,7 +164,7 @@ class AircraftEnv(CAV):
     state 外部所需要的信息
     """
 
-    def __init__(self, random=False, low=True):
+    def __init__(self, random=False, low=True, start_gammaphi=[160, 5], end_gammadphi=[225, 25]):
         CAV.__init__(self, low)
         self.x = None  # 内部循环状态变量
         self.state = None  # 深度强化学习中或者与外界交互变量，长度小于x
@@ -178,8 +178,8 @@ class AircraftEnv(CAV):
         self.v0 = 7200  # m/s
         self.theta0 = -2 / 180 * math.pi  # 弧度  弹道倾角
         self.chi0 = 55 / 180 * math.pi  # 弧度    弹道偏角
-        self.gama0 = 160 / 180 * math.pi  # 弧度  经度
-        self.phi0 = 5 / 180 * math.pi  # 弧度     维度
+        self.gama0 = start_gammaphi[0] / 180 * math.pi  # 弧度  经度
+        self.phi0 = start_gammaphi[1] / 180 * math.pi  # 弧度     维度
         self.range0 = 0  # Km   射程
         self.Q0 = 0
         self.Osci0 = 0
@@ -189,8 +189,8 @@ class AircraftEnv(CAV):
         self.hf = 20  # km
         self.rf = self.R0 + self.hf  # km
         self.vf = 1800  # m/s
-        self.gamaf = 225 / 180 * math.pi  # 弧度
-        self.phif = 25 / 180 * math.pi  # 弧度
+        self.gamaf = end_gammadphi[0] / 180 * math.pi  # 弧度
+        self.phif = end_gammadphi[1] / 180 * math.pi  # 弧度
         self.rangef = self.phigamma2range(self.gama0, self.phi0, self.gamaf, self.phif)  # 射程km 与 range*self.R0差不多
         self.anglef = self.phigamma2angle(self.gama0, self.phi0, self.gamaf, self.phif)
         # 约束条件
