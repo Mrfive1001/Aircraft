@@ -84,7 +84,7 @@ def guidance(cav, net, tht_direction=None, range_target=None):
             elif v > 3500:
                 limit = 10
             else:
-                limit = max(0,(v-1800)*(10-2)/(3500-1800)+2)
+                limit = max(0, (v - 1800) * (10 - 2) / (3500 - 1800) + 2)
             if abs(angle) > limit:
                 if angle > 0:
                     direction = 1
@@ -105,10 +105,9 @@ def guidance(cav, net, tht_direction=None, range_target=None):
         if done:
             h_cmds.append(h_cmds[-1])
             break
-    plt.figure()
-    plt.plot(angles)
     info = {'state_records': state_record, 'w_records': np.array(ws), 'hcmd_records': np.array(h_cmds),
-            'tht_records': np.array(thts), 'range_error': range_left, 'target_error': cav.calculate_range()}
+            'tht_records': np.array(thts), 'range_error': range_left, 'target_error': cav.calculate_range(),
+            'angles': angles}
     return info
 
 
