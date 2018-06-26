@@ -104,10 +104,14 @@ def guidance(cav, net, tht_direction=None, range_target=None):
         state_record = np.vstack((state_record, state_now.copy()))  # 垂直添加
         if done:
             h_cmds.append(h_cmds[-1])
+            angles.append(angles[-1])
+            thts.append(thts[-1])
+            ws.append(ws[-1])
             break
+    t = np.arange(0, len(state_record), 1) * cav.delta_t  # 时间
     info = {'state_records': state_record, 'w_records': np.array(ws), 'hcmd_records': np.array(h_cmds),
             'tht_records': np.array(thts), 'range_error': range_left, 'target_error': cav.calculate_range(),
-            'angles': angles}
+            'angles': np.array(angles),'ts':t}
     return info
 
 

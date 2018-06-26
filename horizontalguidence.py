@@ -17,16 +17,39 @@ if __name__ == '__main__':
     # 定义训练对象
     cav = AircraftEnv()
     # 进行飞行
-    info = guidance(cav,net,tht_direction='strategy')
+    info = guidance(cav, net, tht_direction='strategy')
     states, ws, hcmds, thts = info['state_records'], info['w_records'], info['hcmd_records'], info['tht_records']
-
+    ts, angles = info['ts'], info['angles']
     # 纵向制导画图
+    # 单个HV走廊
+    fig1, ax1 = plt.subplots()
+    cav.plot(states, ax=ax1)
+    ax1.set_xlabel('V(m/s)')
+    ax1.set_ylabel('H(km)')
+    # 单个经纬度图
+    fig2, ax2 = plt.subplots()
     rate = 180 / math.pi
-    plt.figure()
-    plt.plot(states[:, 1] * rate, states[:, 2] * rate)
-    print(info['target_error'])
-    plt.plot([cav.gama0 * rate, cav.gamaf * rate], [cav.phi0 * rate, cav.phif * rate], marker='*', c='r')
-    plt.grid()
-    plt.xlabel('Longitude/$^\circ$')
-    plt.xlabel('Latitude/$^\circ$')
+    ax2.plot(states[:, 1] * rate, states[:, 2] * rate)
+    ax2.scatter([cav.gama0 * rate, cav.gamaf * rate], [cav.phi0 * rate, cav.phif * rate], marker='*', c='r')
+    ax2.grid()
+    ax2.set_xlabel('Longitude($^\circ$)')
+    ax2.set_ylabel('Latitude($^\circ$)')
+    # 单个权重系数变化图
+    fig3, ax3 = plt.subplots()
+    ax3.plot(ts, ws)
+    ax3.set_xlabel('Time(s)')
+    ax3.set_ylabel('Weight')
+    ax3.set_ylim([0, 1.5])
+    # 单个视线角度变化图
+    # fig4, ax4 = plt.subplots()
+    # ax4.plot(ts[:-5], angles[:-5])
+    # ax4.set_xlabel('Time(s)')
+    # ax4.set_ylabel('Angle($^\circ$)')
+
+    # cav = AircraftEnv()
+    # # 进行飞行
+    # info = guidance(cav, net, tht_direction='strategy')
+    # states, ws, hcmds, thts = info['state_records'], info['w_records'], info['hcmd_records'], info['tht_records']
+    # ax1.plot(states[:, 3], states[:, 0] / 1000 - cav.R0)
+
     plt.show()
