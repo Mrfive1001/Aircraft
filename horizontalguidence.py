@@ -41,11 +41,12 @@ if __name__ == '__main__':
     ax3.set_ylabel('Weight')
     ax3.set_ylim([0, 1.5])
     # 单个视线角度变化图
-    # fig4, ax4 = plt.subplots()
-    # ax4.plot(ts[:-5], angles[:-5])
-    # ax4.set_xlabel('Time(s)')
-    # ax4.set_ylabel('Angle($^\circ$)')
+    fig4, ax4 = plt.subplots()
+    ax4.plot(ts[:-5], np.abs(thts[:-5]))
+    ax4.set_xlabel('Time(s)')
+    ax4.set_ylabel('Angle($^\circ$)')
 
+    print(info['range_error'])
     # cav = AircraftEnv()
     # # 进行飞行
     # info = guidance(cav, net, tht_direction='strategy')
