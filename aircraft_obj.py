@@ -273,10 +273,10 @@ class AircraftEnv(CAV):
         info['store'] = store
         return state_record.copy(), info
 
-    def h2tht(self, h_cmd, h_cmds):
+    def h2tht(self, h_cmd, h_cmds, thts=None):
         # 利用倾侧角跟踪目标高度
         # 追踪参数
-        lambda_h = 0.1
+        lambda_h = 0.04
         h_cmd_dot = (h_cmd - h_cmds[-1]) / self.delta_t
         h_cmd_dot2 = ((h_cmd - h_cmds[-1]) - (h_cmds[-1] - h_cmds[-2])) / (self.delta_t) ** 2
         # 气动方面计算
@@ -298,12 +298,15 @@ class AircraftEnv(CAV):
         delta_h = h - h_cmd
         delta_h_dot = h_dot - h_cmd_dot
 
-        h_dot2 = h_cmd_dot2 - 2 * delta_h_dot * lambda_h - lambda_h ** 2 * delta_h
+        h_dot2 = 0 - 2 * delta_h_dot * lambda_h - lambda_h ** 2 * delta_h
 
         cos_tht = ((h_dot2 - v_dot * math.sin(theta)) / math.cos(theta) +
                    (g - v ** 2 / r) * math.cos(theta)) * self.m0 / l
         cos_tht = cos_tht if (0 <= cos_tht <= 1) else (1 if cos_tht > 1 else 0)
         tht = math.acos(cos_tht)  # 弧度
+        if thts:
+            por = 0.9
+            tht = por *abs(thts[-1]) + (1 - por) * tht
         return tht
 
     def hv2tht(self, h, v):
@@ -494,7 +497,7 @@ class AircraftEnv(CAV):
         # 视线角差
         return self.phigamma2angle(self.state[1], self.state[2], self.gamaf, self.phif) - self.state[-2]
 
-    def plot(self, data, hcmds=None,ax = None):
+    def plot(self, data, hcmds=None, ax=None):
         # 画出轨迹的图，输入数据每行代表某一个时刻的状态量
         # 将规划的hv也画出来
         t = np.arange(0, len(data), 1) * self.delta_t  # 时间
@@ -510,6 +513,7 @@ class AircraftEnv(CAV):
             if hcmds is not None:
                 plt.plot(data[:, 3], np.array(hcmds) / 1000)
             plt.grid()
+
 
 if __name__ == '__main__':
     # cav = AircraftEnv()
