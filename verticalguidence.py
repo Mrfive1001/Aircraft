@@ -57,7 +57,7 @@ def guidance(cav, net, tht_direction=None, range_target=None):
             else:
                 w_use = w
             h_cmd = (1 - w_use) * v2h_down(min(v, cav.v0)) + w_use * v2h_up(min(v, cav.v0))  # m
-            tht = cav.h2tht(h_cmd, h_cmds)
+            tht = cav.h2tht(h_cmd, h_cmds,thts)
         angle = cav.calculate_angle() / math.pi * 180
         angles.append(angle)
         # 横向制导
