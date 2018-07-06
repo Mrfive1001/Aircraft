@@ -23,7 +23,7 @@ if __name__ == '__main__':
     # 纵向制导画图
     # 单个HV走廊
     fig1, ax1 = plt.subplots()
-    cav.plot(states, ax=ax1)
+    cav.plot(states, hcmds,ax=ax1)
     ax1.set_xlabel('V(m/s)')
     ax1.set_ylabel('H(km)')
     # 单个经纬度图

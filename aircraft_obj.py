@@ -214,6 +214,8 @@ class AircraftEnv(CAV):
         self.s_dim = len(self.state)
         self.a_dim = None
 
+        self.errors = 0
+
     def _x2state(self, x):
         # 将x缩减为state
         return x.copy()
@@ -229,6 +231,7 @@ class AircraftEnv(CAV):
         else:
             self.x = self.x0.copy()
         self.state = self._x2state(self.x)
+        self.errors = 0
         return self.state.copy()
 
     def hv_w(self, w):
@@ -306,7 +309,7 @@ class AircraftEnv(CAV):
         tht = math.acos(cos_tht)  # 弧度
         if thts:
             por = 0.9
-            tht = por *abs(thts[-1]) + (1 - por) * tht
+            tht = por * abs(thts[-1]) + (1 - por) * tht
         return tht
 
     def hv2tht(self, h, v):
